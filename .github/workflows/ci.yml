@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: py${{ matrix.python-version }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.11", "3.12", "3.13"]
+        include:
+          # prove the C extension compiles on all three toolchains
+          - os: macos-latest      # clang
+            python-version: "3.12"
+          - os: windows-latest    # MSVC
+            python-version: "3.12"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+
+      - name: Build and install (compiles the C extension)
+        run: python -m pip install -e . --no-build-isolation
+
+      - name: Verify the C extension is active
+        # The whole point of CI: fail if the extension did not compile, so the
+        # build cannot go green on the pure-Python fallback.
+        run: |
+          python -c "from gitak import fastmath; assert fastmath.USING_C, 'C extension did not build; CI must run against the compiled kernel'; print('fastmath backend:', fastmath.BACKEND)"
+
+      - name: Run tests
+        # -rs surfaces any skips; the C-vs-Python equivalence test must RUN here
+        run: python -m pytest -q -rs
+
+      - name: Benchmark (smoke)
+        run: python bench/benchmark.py

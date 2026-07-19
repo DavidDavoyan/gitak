@@ -45,7 +45,7 @@ python -c "from gitak import fastmath; print(fastmath.BACKEND)"   # -> c
 python bench/benchmark.py
 ```
 
-Honesty note: the machine this was developed on had no C compiler, so the compiled path was not built or measured there; the pure-Python fallback is what runs and is fully tested. The extension builds and is exercised wherever a toolchain exists (CI, most Linux/macOS setups, Windows with the MSVC Build Tools). Even at its best it only accelerates a few milliseconds of arithmetic — the honest headline remains that Gitak's cost is in scikit-learn and SQLite, both already C.
+Honesty note: the machine this was developed on had no C compiler, so the compiled path was not built or measured there; the pure-Python fallback is what runs and is fully tested locally. The compiled path is built and exercised in continuous integration: [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) compiles the extension on Linux (gcc), macOS (clang) and Windows (MSVC), fails the build if it did not compile, and runs the full test suite including the C-vs-Python equivalence check (which is skipped locally). Even at its best the extension only accelerates a few milliseconds of arithmetic — the honest headline remains that Gitak's cost is in scikit-learn and SQLite, both already C.
 
 ## When performance actually matters here
 

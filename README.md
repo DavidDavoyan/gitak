@@ -1,5 +1,7 @@
 # Գիտակ · Gitak
 
+[![CI](https://github.com/DavidDavoyan/gitak/actions/workflows/ci.yml/badge.svg)](https://github.com/DavidDavoyan/gitak/actions/workflows/ci.yml)
+
 **An open-source student-performance platform for Armenian schools.** Every grade is digital. Every student has a story the school can see and act on: not just the strongest 10 in a class of 30, but all 30.
 
 Gitak turns a school's own exam results into decisions: who needs help next quarter, in which subject, which strong classmate could tutor them, which teachers are actually lifting their students, and which children need an intensive support program before the year slips away.
