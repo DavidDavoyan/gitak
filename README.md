@@ -43,6 +43,20 @@ Other commands: `seed`, `predict`, `pair`, `report` (console summary). Run tests
 
 The demo school is entirely synthetic: about 600 students across grades 1-12, three full school years, 200k+ exam grades, realistic Armenian names and curriculum. No real child's data is in this repository, ever.
 
+## Bring your own data
+
+A real school can run Gitak on its own grade book: export one CSV (one row per grade, straight from Excel) and import it. Armenian class letters (7Ա), Armenian subject names (Հանրահաշիվ) and `2025-26` year formats are understood; validation is strict with row-level errors so a typo cannot silently poison the statistics.
+
+```bash
+python -m gitak --db data/myschool.db import grades.csv --dry-run   # validate first
+python -m gitak --db data/myschool.db import grades.csv
+python -m gitak --db data/myschool.db predict
+python -m gitak --db data/myschool.db pair
+python -m gitak --db data/myschool.db serve
+```
+
+Full column reference, replace semantics and the `--pseudonymize` option (store `Student-0001` names in the database, keep the real-name mapping inside the school): [docs/IMPORT.md](docs/IMPORT.md). A ready example file: [docs/sample-grades.csv](docs/sample-grades.csv).
+
 ## How the year works
 
 ```
@@ -102,7 +116,7 @@ tests/          pytest end-to-end suite
 
 ## Roadmap
 
-- Import from real grade books (CSV, e-journal exports) with pseudonymization
+- E-journal API connectors (beyond CSV)
 - Armenian-language UI toggle
 - Attendance as a model feature
 - Accounts and roles (teacher, director, student, parent) for real deployments

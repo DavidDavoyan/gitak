@@ -21,30 +21,6 @@ import random
 
 from . import config, db, pairing, scoring
 
-SUBJECTS = [
-    # code, name_en, name_hy, domain, level_min, level_max
-    ("mother", "Mayreni", "Մայրենի", "language", 1, 4),
-    ("armlang", "Armenian Language", "Հայոց լեզու", "language", 5, 12),
-    ("armlit", "Literature", "Գրականություն", "language", 5, 12),
-    ("math", "Mathematics", "Մաթեմատիկա", "math", 1, 6),
-    ("algebra", "Algebra", "Հանրահաշիվ", "math", 7, 12),
-    ("geometry", "Geometry", "Երկրաչափություն", "math", 7, 12),
-    ("russian", "Russian", "Ռուսերեն", "language", 2, 12),
-    ("english", "English", "Անգլերեն", "language", 3, 12),
-    ("world", "Me and the World", "Ես և շրջակա աշխարհը", "science", 1, 4),
-    ("natsci", "Natural Science", "Բնագիտություն", "science", 5, 6),
-    ("physics", "Physics", "Ֆիզիկա", "science", 7, 12),
-    ("chemistry", "Chemistry", "Քիմիա", "science", 7, 12),
-    ("biology", "Biology", "Կենսաբանություն", "science", 7, 12),
-    ("geography", "Geography", "Աշխարհագրություն", "science", 6, 11),
-    ("armhist", "Armenian History", "Հայոց պատմություն", "social", 5, 12),
-    ("worldhist", "World History", "Համաշխարհային պատմություն", "social", 6, 12),
-    ("informatics", "Informatics", "Ինֆորմատիկա", "math", 5, 12),
-    ("music", "Music", "Երաժշտություն", "arts", 1, 7),
-    ("art", "Fine Arts", "Կերպարվեստ", "arts", 1, 7),
-    ("pe", "Physical Education", "Ֆիզկուլտուրա", "sport", 1, 12),
-]
-
 MALE_NAMES = [
     "Aram", "Davit", "Narek", "Tigran", "Hayk", "Vahe", "Gor", "Levon",
     "Karen", "Artur", "Samvel", "Ashot", "Vardan", "Ruben", "Suren",
@@ -108,14 +84,10 @@ def seed(con, start_year=2023, n_years=3, seed_value=7, echo=print):
     rng = random.Random(seed_value)
     db.init_db(con)
 
-    # --- subjects -----------------------------------------------------------
-    subjects = []
-    for code, en, hy, dom, lmin, lmax in SUBJECTS:
-        cur = con.execute(
-            "INSERT INTO subjects (code, name_en, name_hy, domain, level_min, level_max) "
-            "VALUES (?,?,?,?,?,?)", (code, en, hy, dom, lmin, lmax))
-        subjects.append({"id": cur.lastrowid, "code": code, "domain": dom,
-                         "lmin": lmin, "lmax": lmax})
+    # --- subjects (catalog is preloaded by db.init_db) ----------------------
+    subjects = [{"id": r["id"], "code": r["code"], "domain": r["domain"],
+                 "lmin": r["level_min"], "lmax": r["level_max"]}
+                for r in con.execute("SELECT * FROM subjects").fetchall()]
 
     # --- teachers -----------------------------------------------------------
     teachers_by_subject = {}

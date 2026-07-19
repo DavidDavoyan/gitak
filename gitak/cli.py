@@ -2,6 +2,7 @@
 
   python -m gitak demo      seed a synthetic school, run predictions + pairing
   python -m gitak seed      create the demo school only
+  python -m gitak import    load a real grade book from CSV (docs/IMPORT.md)
   python -m gitak predict   retrain the model, flag at-risk students
   python -m gitak pair      suggest peer-tutoring pairings for the flags
   python -m gitak report    print a school summary to the console
@@ -9,8 +10,9 @@
 """
 
 import argparse
+import sys
 
-from . import config, db, ml, pairing, reports, seed as seed_mod
+from . import config, db, importer, ml, pairing, reports, seed as seed_mod
 
 
 def _connect(args):
@@ -26,6 +28,16 @@ def cmd_seed(args):
         return
     seed_mod.seed(con, start_year=args.start_year, n_years=args.years,
                   seed_value=args.random_seed)
+
+
+def cmd_import(args):
+    con = _connect(args)
+    try:
+        importer.import_csv(con, args.file, dry_run=args.dry_run,
+                            pseudonymize=args.pseudonymize, encoding=args.encoding)
+    except importer.ImportProblems as e:
+        print(e)
+        sys.exit(1)
 
 
 def cmd_predict(args):
@@ -64,7 +76,9 @@ def cmd_report(args):
     print(f"  school average: {ov['school_avg']} "
           f"(delta {ov['school_avg_delta']:+} vs previous quarter)")
     if ov["model"]:
-        print(f"  model holdout MAE: {ov['model']['mae']} "
+        mae = ov["model"]["mae"]
+        mae_text = mae if mae is not None else "n/a (not enough history for a holdout)"
+        print(f"  model holdout MAE: {mae_text} "
               f"(trained on {ov['model']['n_train']} transitions)")
     print(f"  flagged for {p['target_label']}: {ov['flagged_students']} students, "
           f"{ov['flags_total']} subject flags ({ov['flags_high']} high risk)")
@@ -83,7 +97,11 @@ def cmd_report(args):
 
 
 def cmd_serve(args):
+    import os
+
     import uvicorn
+    if args.db:
+        os.environ["GITAK_DB"] = args.db
     uvicorn.run("gitak.api:app", host="127.0.0.1", port=args.port)
 
 
@@ -104,6 +122,16 @@ def main(argv=None):
     p.add_argument("--start-year", type=int, default=2023)
     p.add_argument("--random-seed", type=int, default=7)
     p.set_defaults(fn=cmd_demo)
+
+    p = sub.add_parser("import", help="load a real grade book from CSV")
+    p.add_argument("file", help="path to the CSV file (see docs/IMPORT.md)")
+    p.add_argument("--dry-run", action="store_true",
+                   help="validate and summarize without writing anything")
+    p.add_argument("--pseudonymize", action="store_true",
+                   help="store Student-0001 style names; mapping saved next to the db")
+    p.add_argument("--encoding", default="utf-8-sig",
+                   help="file encoding (default utf-8-sig, handles Excel BOM)")
+    p.set_defaults(fn=cmd_import)
 
     sub.add_parser("predict", help="train the model and flag at-risk students") \
        .set_defaults(fn=cmd_predict)

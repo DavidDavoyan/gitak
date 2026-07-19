@@ -5,6 +5,7 @@ system's outputs (scores, flags, pairings, badges, model runs). Latent
 quantities used by the demo simulator never touch the database.
 """
 
+import os
 import sqlite3
 from pathlib import Path
 
@@ -34,7 +35,8 @@ CREATE TABLE IF NOT EXISTS students (
     last_name TEXT NOT NULL,
     sex TEXT NOT NULL,
     class_id INTEGER NOT NULL REFERENCES classes(id),
-    enrolled_year INTEGER NOT NULL
+    enrolled_year INTEGER NOT NULL,
+    external_id TEXT                -- the school's own student ID (CSV imports)
 );
 
 CREATE TABLE IF NOT EXISTS teachers (
@@ -130,7 +132,8 @@ CREATE INDEX IF NOT EXISTS idx_scores_period ON scores(school_year, quarter);
 
 
 def connect(path: str | Path | None = None) -> sqlite3.Connection:
-    p = Path(path) if path else config.DB_PATH
+    # precedence: explicit argument > GITAK_DB env var (used by `serve --db`) > default
+    p = Path(path or os.environ.get("GITAK_DB") or config.DB_PATH)
     p.parent.mkdir(parents=True, exist_ok=True)
     con = sqlite3.connect(p)
     con.row_factory = sqlite3.Row
@@ -139,8 +142,42 @@ def connect(path: str | Path | None = None) -> sqlite3.Connection:
     return con
 
 
+# The standard Armenian curriculum catalog. Reference data present in every
+# database (demo or real import) so CSV subject names resolve consistently.
+SUBJECT_CATALOG = [
+    # code, name_en, name_hy, domain, level_min, level_max
+    ("mother", "Mayreni", "Մայրենի", "language", 1, 4),
+    ("armlang", "Armenian Language", "Հայոց լեզու", "language", 5, 12),
+    ("armlit", "Literature", "Գրականություն", "language", 5, 12),
+    ("math", "Mathematics", "Մաթեմատիկա", "math", 1, 6),
+    ("algebra", "Algebra", "Հանրահաշիվ", "math", 7, 12),
+    ("geometry", "Geometry", "Երկրաչափություն", "math", 7, 12),
+    ("russian", "Russian", "Ռուսերեն", "language", 2, 12),
+    ("english", "English", "Անգլերեն", "language", 3, 12),
+    ("world", "Me and the World", "Ես և շրջակա աշխարհը", "science", 1, 4),
+    ("natsci", "Natural Science", "Բնագիտություն", "science", 5, 6),
+    ("physics", "Physics", "Ֆիզիկա", "science", 7, 12),
+    ("chemistry", "Chemistry", "Քիմիա", "science", 7, 12),
+    ("biology", "Biology", "Կենսաբանություն", "science", 7, 12),
+    ("geography", "Geography", "Աշխարհագրություն", "science", 6, 11),
+    ("armhist", "Armenian History", "Հայոց պատմություն", "social", 5, 12),
+    ("worldhist", "World History", "Համաշխարհային պատմություն", "social", 6, 12),
+    ("informatics", "Informatics", "Ինֆորմատիկա", "math", 5, 12),
+    ("music", "Music", "Երաժշտություն", "arts", 1, 7),
+    ("art", "Fine Arts", "Կերպարվեստ", "arts", 1, 7),
+    ("pe", "Physical Education", "Ֆիզկուլտուրա", "sport", 1, 12),
+]
+
+
 def init_db(con: sqlite3.Connection) -> None:
     con.executescript(SCHEMA)
+    # migration for databases created before CSV import existed
+    cols = [r["name"] for r in con.execute("PRAGMA table_info(students)").fetchall()]
+    if "external_id" not in cols:
+        con.execute("ALTER TABLE students ADD COLUMN external_id TEXT")
+    con.executemany(
+        "INSERT OR IGNORE INTO subjects (code, name_en, name_hy, domain, level_min, level_max) "
+        "VALUES (?,?,?,?,?,?)", SUBJECT_CATALOG)
     con.commit()
 
 
