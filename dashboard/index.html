@@ -51,6 +51,18 @@
     font: inherit; font-size: 12px; font-weight: 600; padding: 5px 10px; cursor: pointer;
   }
   .lang button.on { background: var(--s1); color: #fff; }
+  .user { display: flex; align-items: center; gap: 8px; font-size: 12.5px;
+          color: var(--ink-2); }
+  .btn.small { padding: 4px 10px; font-size: 12px; border-radius: 8px; }
+  .login-wrap { display: flex; justify-content: center; padding: 60px 0; }
+  .login-card { width: 320px; background: var(--surface); border: 1px solid var(--border);
+                border-radius: 14px; padding: 26px 24px; }
+  .login-card h2 { margin: 0 0 16px; font-size: 17px; }
+  .login-card input { width: 100%; margin-bottom: 10px; padding: 9px 12px;
+    border-radius: 10px; border: 1px solid var(--axis); background: var(--page);
+    color: var(--ink); font: inherit; }
+  .login-card .err { color: var(--status-crit); font-size: 12.5px; min-height: 18px;
+                     margin: 4px 0 8px; }
   main { max-width: 1100px; margin: 0 auto; padding: 20px 22px 60px; }
   h2 { font-size: 17px; margin: 26px 0 10px; }
   h2:first-child { margin-top: 4px; }
@@ -150,6 +162,7 @@
   <div class="lang" id="lang">
     <button data-l="en">EN</button><button data-l="hy">ՀԱՅ</button>
   </div>
+  <div class="user" id="userbox"></div>
 </header>
 <main id="view"><div class="loading">…</div></main>
 <div id="tip"></div>
@@ -238,6 +251,14 @@ en: {
     riser: 'big improvement', perfect: 'all subjects 9+', mentor: 'helped a classmate improve' },
   riskHigh: '▲ high risk', riskMedium: '● medium',
   track: { STEM: 'STEM', Humanities: 'Humanities', Languages: 'Languages', Arts: 'Arts' },
+  loginTitle: 'Sign in to Gitak',
+  username: 'Username', password: 'Password',
+  signIn: 'Sign in', logout: 'Sign out',
+  loginError: 'Wrong username or password.',
+  notAllowed: 'This page is not available for your account.',
+  signInRequired: 'Please sign in.',
+  navMyPage: 'My page', navMyClass: 'My class',
+  roles: { director: 'Director', teacher: 'Teacher', student: 'Student', parent: 'Parent' },
 },
 hy: {
   tagline: 'Gitak · աշակերտի առաջադիմությունը՝ բաց',
@@ -317,6 +338,14 @@ hy: {
     riser: 'մեծ առաջընթաց', perfect: 'բոլոր առարկաները 9+', mentor: 'օգնել է դասընկերոջը' },
   riskHigh: '▲ բարձր ռիսկ', riskMedium: '● միջին',
   track: { STEM: 'Ճշգրիտ (STEM)', Humanities: 'Հումանիտար', Languages: 'Լեզուներ', Arts: 'Արվեստ' },
+  loginTitle: 'Մուտք Գիտակ',
+  username: 'Մուտքանուն', password: 'Գաղտնաբառ',
+  signIn: 'Մուտք', logout: 'Ելք',
+  loginError: 'Սխալ մուտքանուն կամ գաղտնաբառ։',
+  notAllowed: 'Այս էջը հասանելի չէ ձեր հաշվին։',
+  signInRequired: 'Խնդրում ենք մուտք գործել։',
+  navMyPage: 'Իմ էջը', navMyClass: 'Իմ դասարանը',
+  roles: { director: 'Տնօրեն', teacher: 'Ուսուցիչ', student: 'Աշակերտ', parent: 'Ծնող' },
 },
 };
 
@@ -354,7 +383,13 @@ function reasonText(r) {
 const view = document.getElementById('view');
 const tip = document.getElementById('tip');
 const esc = (s) => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const api = async (p) => (await fetch('/api' + p)).json();
+const api = async (p) => {
+  const r = await fetch('/api' + p);
+  if (!r.ok) throw new Error(
+    r.status === 403 ? t('notAllowed')
+    : r.status === 401 ? t('signInRequired') : 'HTTP ' + r.status);
+  return r.json();
+};
 const fmt = (x, d=2) => x == null ? '–' : (+x).toFixed(d);
 const deltaHtml = (d) => d == null ? '<span class="muted">–</span>'
   : d >= 0 ? `<span class="up">▲ +${(+d).toFixed(2)}</span>`
@@ -493,9 +528,11 @@ async function vOverview() {
         <td>${fmt(s.avg)}</td><td>${s.score}</td></tr>`).join('')}
       </table></div>
   </div>
+  ${(!ME || ME.open || ME.role === 'director') ? `
   <p style="margin-top:16px"><button class="btn primary" id="rerun">${t('rerun')}</button>
-  <span class="muted" id="rerun-note">${t('rerunNote')}</span></p>`;
-  document.getElementById('rerun').onclick = async (e) => {
+  <span class="muted" id="rerun-note">${t('rerunNote')}</span></p>` : ''}`;
+  const rerunBtn = document.getElementById('rerun');
+  if (rerunBtn) rerunBtn.onclick = async (e) => {
     e.target.disabled = true;
     document.getElementById('rerun-note').textContent = t('rerunRunning');
     const r = await fetch('/api/run/predict', {method: 'POST'}).then(r => r.json());
@@ -588,7 +625,8 @@ async function vStudent(id) {
   view.innerHTML = `
   <a class="plain back" href="javascript:history.back()">${t('back')}</a>
   <h2 style="margin-top:0">${esc(p.name)}
-    <span class="muted" style="font-weight:400">· ${t('classWord').toLowerCase()} ${esc(clsName(p.class))} ·
+    <span class="muted" style="font-weight:400">· ${t('classWord').toLowerCase()}
+    <a class="plain" href="#class/${p.class_id}">${esc(clsName(p.class))}</a> ·
     ${p.status === 'graduated' ? t('graduated') : esc(t('gradeN', p.grade_level))}</span></h2>
   <div class="tiles">
     <div class="tile"><div class="l">${t('gitakScore')}</div><div class="v">${latest ? latest.score : '–'}</div>
@@ -712,19 +750,91 @@ function vAbout() {
 }
 
 /* ---------------- chrome + router ---------------- */
-function renderChrome() {
-  document.documentElement.lang = lang;
-  document.getElementById('tagline').textContent = t('tagline');
-  document.getElementById('nav').innerHTML = `
+let ME = null;   // null = sign-in needed; {open:true} = no accounts, demo mode
+const restrictedRole = () => ME && !ME.open && (ME.role === 'student' || ME.role === 'parent');
+
+function navHtml() {
+  if (!ME) return '';
+  if (restrictedRole()) {
+    const kids = ME.students || [];
+    let items = '';
+    if (ME.role === 'student' && kids.length === 1) {
+      items += `<a href="#student/${kids[0].id}">${t('navMyPage')}</a>`;
+      if (kids[0].class_id) items += `<a href="#class/${kids[0].class_id}">${t('navMyClass')}</a>`;
+    } else {
+      items += kids.map(k =>
+        `<a href="#student/${k.id}">${esc(k.name)}</a>
+         <a href="#class/${k.class_id}">${esc(clsName(k.class))}</a>`).join('');
+    }
+    return items + `<a href="#about">${t('navAbout')}</a>`;
+  }
+  return `
     <a href="#overview">${t('navOverview')}</a><a href="#classes">${t('navClasses')}</a>
     <a href="#students">${t('navStudents')}</a><a href="#teachers">${t('navTeachers')}</a>
     <a href="#about">${t('navAbout')}</a>`;
+}
+
+function renderChrome() {
+  document.documentElement.lang = lang;
+  document.getElementById('tagline').textContent = t('tagline');
+  document.getElementById('nav').innerHTML = navHtml();
   document.querySelectorAll('#lang button').forEach(b =>
     b.classList.toggle('on', b.dataset.l === lang));
+  const box = document.getElementById('userbox');
+  if (ME && !ME.open) {
+    const roleName = (T[lang].roles || T.en.roles)[ME.role] || ME.role;
+    box.innerHTML = `<span>${esc(ME.name)} <span class="muted">· ${esc(roleName)}</span></span>
+      <button class="btn small" id="logout">${t('logout')}</button>`;
+    document.getElementById('logout').onclick = async () => {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      ME = null; renderChrome(); renderLogin();
+    };
+  } else {
+    box.innerHTML = '';
+  }
+}
+
+function renderLogin() {
+  view.innerHTML = `<div class="login-wrap"><div class="login-card">
+    <h2>${t('loginTitle')}</h2>
+    <input id="lg-u" placeholder="${esc(t('username'))}" autocomplete="username" autofocus>
+    <input id="lg-p" type="password" placeholder="${esc(t('password'))}" autocomplete="current-password">
+    <div class="err" id="lg-err"></div>
+    <button class="btn primary" id="lg-go" style="width:100%">${t('signIn')}</button>
+  </div></div>`;
+  const go = async () => {
+    const r = await fetch('/api/auth/login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: document.getElementById('lg-u').value,
+                             password: document.getElementById('lg-p').value })
+    });
+    if (!r.ok) { document.getElementById('lg-err').textContent = t('loginError'); return; }
+    ME = await r.json();
+    renderChrome();
+    defaultRoute();
+  };
+  document.getElementById('lg-go').onclick = go;
+  view.querySelectorAll('input').forEach(i =>
+    i.addEventListener('keydown', e => { if (e.key === 'Enter') go(); }));
+}
+
+function defaultRoute() {
+  if (restrictedRole() && ME.students && ME.students.length) {
+    const target = '#student/' + ME.students[0].id;
+    if (location.hash === target) route(); else location.hash = target;
+  } else if (location.hash) {
+    route();
+  } else {
+    location.hash = '#overview';
+  }
 }
 
 async function route() {
-  const h = location.hash || '#overview';
+  if (!ME) { renderLogin(); return; }
+  let h = location.hash || '#overview';
+  if (restrictedRole() && (h === '#overview' || h === '#students' || h === '#teachers')) {
+    defaultRoute(); return;
+  }
   document.querySelectorAll('#nav a').forEach(a =>
     a.classList.toggle('on',
       a.getAttribute('href') === h ||
@@ -754,9 +864,14 @@ document.getElementById('lang').addEventListener('click', (e) => {
   route();
 });
 
-addEventListener('hashchange', route);
-renderChrome();
-route();
+addEventListener('hashchange', () => { if (ME) route(); });
+(async function boot() {
+  let r = null;
+  try { r = await fetch('/api/auth/me'); } catch (e) {}
+  ME = r && r.ok ? await r.json() : null;
+  renderChrome();
+  if (!ME) renderLogin(); else defaultRoute();
+})();
 document.addEventListener('click', (e) => {
   const row = e.target.closest('[data-go]');
   if (row) location.hash = row.dataset.go;

@@ -111,6 +111,29 @@ CREATE TABLE IF NOT EXISTS badges (
     quarter INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY,
+    username TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    role TEXT NOT NULL,             -- director | teacher | student | parent
+    display_name TEXT NOT NULL DEFAULT '',
+    teacher_id INTEGER REFERENCES teachers(id),
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS user_students (
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    student_id INTEGER NOT NULL REFERENCES students(id),
+    PRIMARY KEY (user_id, student_id)
+);
+
+CREATE TABLE IF NOT EXISTS sessions (
+    token TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS model_runs (
     id INTEGER PRIMARY KEY,
     created_at TEXT NOT NULL,

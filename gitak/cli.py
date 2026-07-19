@@ -7,12 +7,13 @@
   python -m gitak pair      suggest peer-tutoring pairings for the flags
   python -m gitak report    print a school summary to the console
   python -m gitak serve     start the web dashboard (default port 3303)
+  python -m gitak users     accounts and roles (docs/ACCOUNTS.md)
 """
 
 import argparse
 import sys
 
-from . import config, db, importer, ml, pairing, reports, seed as seed_mod
+from . import auth, config, db, importer, ml, pairing, reports, seed as seed_mod
 
 
 def _connect(args):
@@ -96,6 +97,49 @@ def cmd_report(args):
                   f"in {s['weak_subjects']}/{s['subjects_total']} subjects")
 
 
+def cmd_users(args):
+    con = _connect(args)
+    try:
+        if args.users_cmd == "create":
+            password = args.password or auth.generate_password()
+            auth.create_user(con, args.username, password, args.role,
+                             display_name=args.name or "",
+                             teacher_id=args.teacher_id,
+                             student_ids=args.student_id or [])
+            shown = "(as given)" if args.password else password
+            print(f"created {args.role} '{args.username}', password: {shown}")
+        elif args.users_cmd == "provision-students":
+            created = auth.provision_students(con)
+            print(f"created {len(created)} student accounts"
+                  + ("; passwords written to student-accounts.csv next to the db"
+                     " (distribute, then delete the file)" if created else ""))
+        elif args.users_cmd == "provision-teachers":
+            created = auth.provision_teachers(con)
+            print(f"created {len(created)} teacher accounts"
+                  + ("; passwords written to teacher-accounts.csv next to the db"
+                     " (distribute, then delete the file)" if created else ""))
+        elif args.users_cmd == "list":
+            users = auth.list_users(con)
+            if not users:
+                print("no accounts yet: the database runs open (demo mode)")
+            for u in users:
+                extra = f" (teacher #{u['teacher_id']})" if u["teacher_id"] else ""
+                print(f"  {u['role']:<9} {u['username']:<16} {u['display_name']}{extra}")
+        elif args.users_cmd == "set-password":
+            password = args.password or auth.generate_password()
+            if auth.set_password(con, args.username, password):
+                shown = "(as given)" if args.password else password
+                print(f"password updated for '{args.username}': {shown}")
+            else:
+                print(f"no account named '{args.username}'")
+        elif args.users_cmd == "delete":
+            print("deleted" if auth.delete_user(con, args.username)
+                  else f"no account named '{args.username}'")
+    except ValueError as e:
+        print(f"error: {e}")
+        sys.exit(1)
+
+
 def cmd_serve(args):
     import os
 
@@ -139,6 +183,28 @@ def main(argv=None):
        .set_defaults(fn=cmd_pair)
     sub.add_parser("report", help="print a school summary") \
        .set_defaults(fn=cmd_report)
+
+    p = sub.add_parser("users", help="manage accounts and roles")
+    up = p.add_subparsers(dest="users_cmd", required=True)
+    c = up.add_parser("create", help="create one account (first must be a director)")
+    c.add_argument("--role", required=True, choices=auth.ROLES)
+    c.add_argument("--username", required=True)
+    c.add_argument("--password", help="omit to auto-generate and print")
+    c.add_argument("--name", help="display name")
+    c.add_argument("--teacher-id", type=int, help="teachers: their id in the teachers table")
+    c.add_argument("--student-id", type=int, action="append",
+                   help="students/parents: linked student id (repeatable for parents)")
+    up.add_parser("provision-students",
+                  help="one account per active student, passwords to CSV")
+    up.add_parser("provision-teachers",
+                  help="one account per teacher, passwords to CSV")
+    up.add_parser("list", help="list all accounts")
+    sp = up.add_parser("set-password", help="reset a password")
+    sp.add_argument("username")
+    sp.add_argument("--password", help="omit to auto-generate and print")
+    dl = up.add_parser("delete", help="delete an account")
+    dl.add_argument("username")
+    p.set_defaults(fn=cmd_users)
 
     p = sub.add_parser("serve", help="start the web dashboard")
     p.add_argument("--port", type=int, default=config.DEFAULT_PORT)

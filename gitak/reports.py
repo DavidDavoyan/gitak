@@ -294,6 +294,7 @@ def student_profile(con, student_id):
         "id": st["id"],
         "name": f'{st["first_name"]} {st["last_name"]}',
         "class": class_label(st["cohort_year"], st["letter"], ty),
+        "class_id": st["class_id"],
         "grade_level": gl_next if 1 <= gl_next <= 12 else None,
         "status": "active" if 1 <= gl_next <= 12 else "graduated",
         "enrolled_year": st["enrolled_year"],
