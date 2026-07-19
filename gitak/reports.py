@@ -74,9 +74,21 @@ def overview(con):
         "WHERE sc.school_year=? AND sc.quarter=? AND sc.delta IS NOT NULL "
         "ORDER BY sc.delta DESC LIMIT 10", (ly, lq)).fetchall()
 
+    att = con.execute(
+        "SELECT SUM(present) p, SUM(absent) a FROM attendance "
+        "WHERE school_year=? AND quarter=?", (ly, lq)).fetchone()
+    att_total = (att["p"] or 0) + (att["a"] or 0)
+    attendance_rate = round(100 * att["p"] / att_total, 1) if att_total else None
+    chronic = con.execute(
+        "SELECT COUNT(*) c FROM attendance WHERE school_year=? AND quarter=? "
+        "AND present + absent > 0 AND absent * 1.0 / (present + absent) >= 0.10",
+        (ly, lq)).fetchone()["c"] if att_total else 0
+
     return {
         "period": period,
         "n_students_active": len(active),
+        "attendance_rate": attendance_rate,
+        "chronic_absence": chronic,
         "n_classes": len({s["class_id"] for sid, s in students.items() if sid in active}),
         "n_teachers": con.execute("SELECT COUNT(*) c FROM teachers").fetchone()["c"],
         "school_avg": round(school_avg, 2) if school_avg else None,
@@ -252,10 +264,27 @@ def student_profile(con, student_id):
         timelines.setdefault(r["subj"], []).append(
             {"y": r["y"], "q": r["q"], "avg": round(r["avg"], 2)})
 
-    scores = [dict(r) for r in con.execute(
-        "SELECT school_year y, quarter q, quarter_avg, delta, score, rank_class "
-        "FROM scores WHERE student_id=? ORDER BY school_year, quarter",
-        (student_id,)).fetchall()]
+    attendance = {}
+    for r in con.execute(
+            "SELECT school_year y, quarter q, present, absent FROM attendance "
+            "WHERE student_id=? ORDER BY school_year, quarter", (student_id,)).fetchall():
+        total = r["present"] + r["absent"]
+        attendance[(r["y"], r["q"])] = {
+            "present": r["present"], "absent": r["absent"],
+            "rate": round(100 * r["present"] / total, 1) if total else None}
+    att_points = [{"y": y, "q": q, "absent": v["absent"], "rate": v["rate"]}
+                  for (y, q), v in sorted(attendance.items())]
+    latest_att = att_points[-1] if att_points else None
+
+    scores = []
+    for r in con.execute(
+            "SELECT school_year y, quarter q, quarter_avg, delta, score, rank_class "
+            "FROM scores WHERE student_id=? ORDER BY school_year, quarter",
+            (student_id,)).fetchall():
+        row = dict(r)
+        a = attendance.get((r["y"], r["q"]))
+        row["attendance_rate"] = a["rate"] if a else None
+        scores.append(row)
     badges = [dict(r) for r in con.execute(
         "SELECT code, school_year y, quarter q FROM badges WHERE student_id=? "
         "ORDER BY school_year DESC, quarter DESC", (student_id,)).fetchall()]
@@ -312,6 +341,8 @@ def student_profile(con, student_id):
         "times_tutee": [{"subject": subjects[p["subject_id"]]["name_en"],
                          "y": p["school_year"], "q": p["quarter"]} for p in tutee_pairs],
         "tracks": tracks,
+        "attendance": att_points,
+        "attendance_latest": latest_att,
     }
 
 

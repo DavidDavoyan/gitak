@@ -76,6 +76,9 @@ def cmd_report(args):
           f"{ov['n_teachers']} teachers")
     print(f"  school average: {ov['school_avg']} "
           f"(delta {ov['school_avg_delta']:+} vs previous quarter)")
+    if ov.get("attendance_rate") is not None:
+        print(f"  attendance: {ov['attendance_rate']}% "
+              f"({ov['chronic_absence']} students missing 10%+ of lessons)")
     if ov["model"]:
         mae = ov["model"]["mae"]
         mae_text = mae if mae is not None else "n/a (not enough history for a holdout)"

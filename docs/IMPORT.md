@@ -44,6 +44,29 @@ Headers are case-insensitive; common aliases work (`mark` for grade, `year` for 
 - **Validation is strict on purpose.** Bad grades, unreadable classes and duplicate rows abort the import with row numbers, so a typo cannot silently poison the statistics. Run `--dry-run` first.
 - **History unlocks the model.** Forecasts need at least two imported quarters per subject (three or more years of history make them good). With one quarter, scores and leaderboards still work.
 
+## Attendance
+
+Attendance is a model feature: a student missing many lessons is at risk even when this quarter's grades still look fine, and Gitak learns that link. Import it with the **same command**, which auto-detects an attendance file by its `present`/`absent` columns:
+
+```bash
+python -m gitak --db data/myschool.db import attendance.csv
+```
+
+One row per student per quarter:
+
+| Column | Required | Format |
+|---|---|---|
+| `student_id` or `student` | yes | matched against students already imported |
+| `class` | yes (with `student`) | `7A`, `7Ա` — needed to disambiguate names |
+| `school_year` | yes | `2025` or `2025-26` |
+| `quarter` | yes | 1-4 |
+| `present` | yes | lessons (or days) attended |
+| `absent` | yes | lessons (or days) missed |
+
+Import the grade book **first** so the students exist; attendance rows that match no student are skipped with a count. Re-importing replaces a quarter's attendance. Aliases work here too (`attended`/`missed`, `days_present`/`days_absent`). After importing attendance, run `predict` again so the model picks it up.
+
+Attendance feeds the forecast and adds a "frequent absences (N% of lessons missed)" clause to flag reasons, and it shows on the dashboard, but it deliberately does **not** affect the Gitak Score: a child who is ill should not lose leaderboard points. Example file: [sample-attendance.csv](sample-attendance.csv).
+
 ## Privacy: pseudonymized import
 
 For analysis without real names in the database:

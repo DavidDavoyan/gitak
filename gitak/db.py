@@ -111,6 +111,15 @@ CREATE TABLE IF NOT EXISTS badges (
     quarter INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS attendance (
+    student_id INTEGER NOT NULL REFERENCES students(id),
+    school_year INTEGER NOT NULL,
+    quarter INTEGER NOT NULL,
+    present INTEGER NOT NULL,       -- lessons (or days) attended this quarter
+    absent INTEGER NOT NULL,        -- lessons (or days) missed
+    PRIMARY KEY (student_id, school_year, quarter)
+);
+
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY,
     username TEXT UNIQUE NOT NULL,

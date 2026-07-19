@@ -164,8 +164,12 @@ def transcript(student_id: int, con=Depends(get_con), user=Depends(get_user)):
         WHERE g.student_id = ?
         ORDER BY e.school_year, e.quarter, s.name_en
     """, (student_id,)).fetchall()]
+    attendance = [dict(r) for r in con.execute(
+        "SELECT school_year, quarter, present, absent FROM attendance "
+        "WHERE student_id=? ORDER BY school_year, quarter", (student_id,)).fetchall()]
     return JSONResponse(
-        {"format": "gitak-transcript-v1", "profile": profile, "exams": exams},
+        {"format": "gitak-transcript-v1", "profile": profile,
+         "exams": exams, "attendance": attendance},
         headers={"Content-Disposition":
                  f'attachment; filename="transcript-{student_id}.json"'})
 

@@ -50,9 +50,15 @@ TUTOR_PERMANENT_GAIN = 0.04
 
 SEASON = {1: 0.0, 2: -0.1, 3: 0.0, 4: 0.1}
 
+# Attendance simulation: ~45 lessons per quarter; missing more than ~4% of
+# them starts to cost grades, which is exactly the signal the model learns.
+LESSONS_PER_QUARTER = 45
+ATTENDANCE_GRADE_EFFECT = 3.0
+ILLNESS_CHANCE = 0.04
+
 
 class _Student:
-    __slots__ = ("id", "class_id", "cohort_year", "g", "dom", "drift", "wobble")
+    __slots__ = ("id", "class_id", "cohort_year", "g", "dom", "drift", "wobble", "abs_p")
 
     def __init__(self, sid, class_id, cohort_year, rng):
         self.id = sid
@@ -63,6 +69,9 @@ class _Student:
                     for d in ("language", "math", "science", "social", "arts", "sport")}
         self.drift = 0.0
         self.wobble = {}
+        # absence propensity: most students miss a few percent, struggling
+        # students slightly more
+        self.abs_p = min(0.3, max(0.004, rng.gauss(0.035, 0.028) - 0.012 * self.g))
 
     def ability(self, subject, rng):
         w = self.wobble.get(subject["code"])
@@ -165,6 +174,23 @@ def seed(con, start_year=2023, n_years=3, seed_value=7, echo=print):
             st.drift += rng.gauss(0, 0.25)
 
         for quarter in config.QUARTERS:
+            # each student's absences this quarter; heavy absence dents grades
+            absent_frac, att_rows = {}, []
+            for st in students_by_id.values():
+                p = st.abs_p
+                if rng.random() < ILLNESS_CHANCE:      # an illness/family spell
+                    p += rng.uniform(0.08, 0.22)
+                absent = min(LESSONS_PER_QUARTER,
+                             sum(1 for _ in range(LESSONS_PER_QUARTER) if rng.random() < p))
+                frac = absent / LESSONS_PER_QUARTER
+                absent_frac[st.id] = frac
+                att_rows.append((st.id, year, quarter,
+                                 LESSONS_PER_QUARTER - absent, absent))
+            con.executemany(
+                "INSERT OR REPLACE INTO attendance "
+                "(student_id, school_year, quarter, present, absent) VALUES (?,?,?,?,?)",
+                att_rows)
+
             grade_rows = []
             for gl, cls in year_classes:
                 for s in subjects:
@@ -180,7 +206,10 @@ def seed(con, start_year=2023, n_years=3, seed_value=7, echo=print):
                         exam_ids.append(cur.lastrowid)
                     for st in cls["students"]:
                         boost = active_boosts.get((st.id, s["id"]), 0.0)
-                        exp = _expected(st, s, teff, quarter, gl, boost, rng)
+                        # missed lessons above a small tolerance drag the grade down
+                        att_penalty = ATTENDANCE_GRADE_EFFECT * max(0.0, absent_frac[st.id] - 0.04)
+                        exp = _expected(st, s, teff, quarter, gl, boost, rng) - att_penalty
+                        exp = max(1.5, exp)
                         for eid in exam_ids:
                             g = round(max(1, min(10, exp + rng.gauss(0, 0.75))))
                             grade_rows.append((eid, st.id, g))

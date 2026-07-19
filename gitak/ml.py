@@ -22,7 +22,12 @@ from sklearn.metrics import mean_absolute_error
 from . import config, db
 
 FEATURES = ["last_avg", "prev_avg", "prev2_avg", "slope", "overall_avg",
-            "class_avg", "vs_class", "grade_level_next", "quarter_next", "n_history"]
+            "class_avg", "vs_class", "grade_level_next", "quarter_next", "n_history",
+            "absence_rate", "prev_absence_rate"]
+
+# Absence rate (fraction of lessons missed) at or above this in the last
+# quarter contributes an attendance clause to a flag's reason.
+ABSENCE_FLAG_RATE = 0.10
 
 
 def _load(con):
@@ -42,10 +47,17 @@ def _load(con):
         class_acc.setdefault((r["cls"], r["subj"], t), []).append(r["avg"])
     overall = {k: sum(v) / len(v) for k, v in overall_acc.items()}
     class_avg = {k: sum(v) / len(v) for k, v in class_acc.items()}
-    return timelines, overall, class_avg
+    absence = {}
+    for r in con.execute(
+            "SELECT student_id sid, school_year y, quarter q, present, absent "
+            "FROM attendance").fetchall():
+        total = r["present"] + r["absent"]
+        if total:
+            absence[(r["sid"], config.timeline_index(r["y"], r["q"]))] = r["absent"] / total
+    return timelines, overall, class_avg, absence
 
 
-def _features(sid, subj, t, tl, overall, class_avg, cls, cohort):
+def _features(sid, subj, t, tl, overall, class_avg, absence, cls, cohort):
     g0 = tl[t]
     g1 = tl.get(t - 1, g0)
     g2 = tl.get(t - 2, g1)
@@ -58,6 +70,8 @@ def _features(sid, subj, t, tl, overall, class_avg, cls, cohort):
         (t_next // 4) - cohort + 1,
         t_next % 4 + 1,
         min(len([x for x in tl if x <= t]), 12),
+        absence.get((sid, t), 0.0),
+        absence.get((sid, t - 1), 0.0),
     ]
 
 
@@ -78,7 +92,7 @@ def train_and_predict(con, echo=print):
     target_year, target_quarter = db.next_period(*latest)
     t_target = config.timeline_index(target_year, target_quarter)
 
-    timelines, overall, class_avg = _load(con)
+    timelines, overall, class_avg, absence = _load(con)
     meta = _student_meta(con)
 
     X_train, y_train, X_val, y_val = [], [], [], []
@@ -89,7 +103,7 @@ def train_and_predict(con, echo=print):
         for t in tl:
             if t + 1 not in tl:
                 continue
-            feats = _features(sid, subj, t, tl, overall, class_avg, cls, cohort)
+            feats = _features(sid, subj, t, tl, overall, class_avg, absence, cls, cohort)
             if t + 1 == t_max:
                 X_val.append(feats), y_val.append(tl[t + 1])
             else:
@@ -122,7 +136,7 @@ def train_and_predict(con, echo=print):
             t_ref = max(tl)
             if t_ref < t_max - 3:
                 continue  # stale timeline (subject ended earlier)
-            feats = _features(sid, subj_id, t_ref, tl, overall, class_avg, cls, cohort)
+            feats = _features(sid, subj_id, t_ref, tl, overall, class_avg, absence, cls, cohort)
             pred = float(np.clip(model.predict(np.array([feats]))[0],
                                  config.GRADE_MIN, config.GRADE_MAX))
             preds.append(pred)
@@ -160,12 +174,15 @@ def train_and_predict(con, echo=print):
 
 
 def _reason(pred, feats):
-    last_avg, _, _, slope, overall_avg, _, vs_class, *_ = feats
+    last_avg, _, _, slope, overall_avg, _, vs_class = feats[:7]
+    absence_rate = feats[10]
     parts = [f"forecast {pred:.1f} next quarter"]
     if slope <= -0.25:
         parts.append("declining for several quarters")
     if vs_class <= -1.0:
         parts.append("well below class average")
+    if absence_rate >= ABSENCE_FLAG_RATE:
+        parts.append(f"frequent absences ({absence_rate * 100:.0f}% of lessons missed)")
     if last_avg < config.WEAK_THRESHOLD:
         parts.append(f"already at {last_avg:.1f}")
     elif last_avg >= config.WEAK_THRESHOLD and overall_avg >= config.WEAK_THRESHOLD:

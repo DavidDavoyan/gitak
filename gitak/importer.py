@@ -46,6 +46,8 @@ ALIASES = {
     "exam": {"exam", "exam_name", "exam_label", "test", "date"},
     "grade": {"grade", "mark", "score"},
     "teacher": {"teacher", "teacher_name"},
+    "present": {"present", "attended", "days_present", "lessons_present"},
+    "absent": {"absent", "missed", "days_absent", "lessons_absent", "absences"},
 }
 
 ARMENIAN_LETTERS = {"Ա": "A", "Բ": "B", "Գ": "C", "Դ": "D", "Ե": "E", "Զ": "F"}
@@ -199,9 +201,114 @@ def _duplicate_check(records):
         raise ImportProblems(errors)
 
 
+def _headers_of(path, encoding):
+    text = Path(path).read_text(encoding=encoding)
+    delimiter = ";" if text.count(";") > text.count(",") else ","
+    reader = csv.DictReader(text.splitlines(), delimiter=delimiter)
+    return _map_headers(reader.fieldnames), reader.fieldnames, delimiter, text
+
+
+def _read_attendance_rows(text, delimiter, headers):
+    reader = csv.DictReader(text.splitlines(), delimiter=delimiter)
+
+    def cell(row, key):
+        return (row.get(headers[key]) or "").strip() if key in headers else ""
+
+    def as_int(v):
+        try:
+            return int(float(str(v).replace(",", ".")))
+        except (TypeError, ValueError):
+            return None
+
+    records, errors = [], []
+    for n, row in enumerate(reader, start=2):
+        if not any((v or "").strip() for v in row.values()):
+            continue
+        rec = {"student": cell(row, "student"), "student_id": cell(row, "student_id")}
+        if not rec["student"] and not rec["student_id"]:
+            errors.append((n, "empty student name and id")); continue
+        rec["class"] = parse_class(cell(row, "class"))
+        if rec["class"] is None:
+            errors.append((n, f"unreadable class '{cell(row, 'class')}'"))
+        rec["year"] = parse_year(cell(row, "school_year"))
+        if rec["year"] is None:
+            errors.append((n, f"unreadable school_year '{cell(row, 'school_year')}'"))
+        q = cell(row, "quarter")
+        rec["quarter"] = int(q) if q.isdigit() and 1 <= int(q) <= 4 else None
+        if rec["quarter"] is None:
+            errors.append((n, f"quarter must be 1-4, got '{q}'"))
+        present, absent = as_int(cell(row, "present")), as_int(cell(row, "absent"))
+        if present is None or absent is None or present < 0 or absent < 0:
+            errors.append((n, "present and absent must be non-negative whole numbers"))
+        elif present + absent == 0:
+            errors.append((n, "present + absent is zero (no lessons recorded)"))
+        rec["present"], rec["absent"], rec["row"] = present, absent, n
+        records.append(rec)
+    if errors:
+        raise ImportProblems(errors)
+    if not records:
+        raise ImportProblems([(2, "no data rows found")])
+    return records
+
+
+def import_attendance(con, path, records, dry_run, encoding, echo):
+    """Attach per-quarter attendance to students that already exist. Grades
+    should be imported first so students and classes are known."""
+    warnings, matched, missing, periods = [], 0, 0, set()
+    rows = []
+    for rec in records:
+        level, letter = rec["class"] if rec["class"] else (None, None)
+        sid = None
+        if rec["student_id"]:
+            r = con.execute("SELECT id FROM students WHERE external_id=?",
+                            (rec["student_id"],)).fetchone()
+            sid = r["id"] if r else None
+        if sid is None and rec["student"] and level is not None:
+            cohort = rec["year"] - level + 1
+            first, last = _split_name(rec["student"])
+            r = con.execute("""
+                SELECT s.id FROM students s JOIN classes c ON c.id = s.class_id
+                WHERE s.first_name=? AND s.last_name=? AND c.cohort_year=? AND c.letter=?""",
+                (first, last, cohort, letter)).fetchone()
+            sid = r["id"] if r else None
+        if sid is None:
+            missing += 1
+            continue
+        matched += 1
+        periods.add((rec["year"], rec["quarter"]))
+        rows.append((sid, rec["year"], rec["quarter"], rec["present"], rec["absent"]))
+
+    if missing:
+        warnings.append(f"{missing} attendance row(s) had no matching student "
+                        f"(import grades first, or check ids/names); skipped")
+    if not matched:
+        raise ImportProblems([(1, "no attendance rows matched an existing student; "
+                                  "import the grade book first")])
+    if not dry_run:
+        con.executemany(
+            "INSERT OR REPLACE INTO attendance "
+            "(student_id, school_year, quarter, present, absent) VALUES (?,?,?,?,?)", rows)
+        con.commit()
+    verb = "would attach" if dry_run else "attached"
+    ptext = ", ".join(f"{y}-{str(y + 1)[2:]} Q{q}" for y, q in sorted(periods))
+    echo(f"{verb} attendance for {matched} student-quarters ({ptext})")
+    for w in warnings:
+        echo(f"  note: {w}")
+    if not dry_run:
+        echo("  next: python -m gitak predict  (attendance now feeds the model)")
+    return {"kind": "attendance", "dry_run": dry_run, "n_matched": matched,
+            "n_missing": missing, "periods": sorted(periods), "warnings": warnings}
+
+
 def import_csv(con, path, dry_run=False, pseudonymize=False,
                encoding="utf-8-sig", echo=print):
     db.init_db(con)
+    headers, _fields, delimiter, text = _headers_of(path, encoding)
+    # attendance file: has present/absent but no per-grade columns
+    if ("present" in headers or "absent" in headers) \
+            and "grade" not in headers and "subject" not in headers:
+        att_records = _read_attendance_rows(text, delimiter, headers)
+        return import_attendance(con, path, att_records, dry_run, encoding, echo)
     records = _read_rows(path, encoding)
     warnings = []
     if pseudonymize and any(not r["student_id"] for r in records):

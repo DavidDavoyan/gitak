@@ -191,6 +191,11 @@ en: {
   tutoringPairsSub: 'strong students helping flagged ones',
   modelAccuracy: 'Model accuracy',
   modelAccuracySub: 'holdout error on a 10-point scale',
+  attendance: 'Attendance',
+  attendanceSub: (n) => `${n} students missing 10%+ of lessons`,
+  attendanceLatest: 'attended last quarter',
+  attendanceHistory: 'Attendance',
+  absentLessons: (n) => `${n} lessons missed`,
   tutoringWorks: 'Does peer tutoring work here?',
   tutoringLine: (pd, ud, np, nu) => `<b>${pd}</b> average move per quarter for tutored students
     in the paired subject, vs <b>${ud}</b> for flagged students without a tutor
@@ -278,6 +283,11 @@ hy: {
   tutoringPairsSub: 'ուժեղ աշակերտներն օգնում են դժվարացողներին',
   modelAccuracy: 'Մոդելի ճշգրտություն',
   modelAccuracySub: 'սխալը 10 բալանոց սանդղակով',
+  attendance: 'Հաճախում',
+  attendanceSub: (n) => `${n} աշակերտ բացակայում է դասերի 10%+-ից`,
+  attendanceLatest: 'հաճախում անցած քառորդում',
+  attendanceHistory: 'Հաճախում',
+  absentLessons: (n) => `${n} բաց թողնված դաս`,
   tutoringWorks: 'Աշխատո՞ւմ է կրկնուսուցությունը',
   tutoringLine: (pd, ud, np, nu) => `<b>${pd}</b> միջին փոփոխություն մեկ քառորդում կրկնուսույց
     ունեցող աշակերտների մոտ տվյալ առարկայում, ընդդեմ <b>${ud}</b>-ի՝ առանց կրկնուսույցի
@@ -369,6 +379,7 @@ const REASON_HY = [
   [/declining for several quarters/, 'նվազում է մի քանի քառորդ շարունակ'],
   [/well below class average/, 'դասարանի միջինից զգալի ցածր'],
   [/already at (\d+(?:\.\d+)?)/, 'արդեն $1 է'],
+  [/frequent absences \((\d+)% of lessons missed\)/, 'հաճախակի բացակայություններ (դասերի $1%-ը բաց թողնված)'],
   [/subject-specific dip, otherwise solid/, 'անկում միայն այս առարկայում, մնացածը կայուն է'],
   [/quarter average (\d+(?:\.\d+)?) is below (\d+)/, 'քառորդի միջինը ($1) ցածր է $2-ից'],
 ];
@@ -450,6 +461,35 @@ function scoreChart(scores) {
     ${dots}</svg>`;
 }
 
+function attendanceChart(points) {
+  if (!points.length) return '';
+  const w = 760, h = 130, padL = 40, padR = 16, padT = 12, padB = 26;
+  const rated = points.filter(p => p.rate != null);
+  if (!rated.length) return '';
+  const x = i => padL + i * (w - padL - padR) / Math.max(points.length - 1, 1);
+  const lo = 80;   /* show the 80-100% band where variation lives */
+  const y = v => padT + (100 - Math.max(v, lo)) * (h - padT - padB) / (100 - lo);
+  const path = points.map((p, i) => p.rate == null ? '' :
+    `${i && points[i-1].rate != null ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.rate).toFixed(1)}`).join('');
+  const gridlines = [80, 90, 100].map(v =>
+    `<line x1="${padL}" y1="${y(v)}" x2="${w-padR}" y2="${y(v)}" stroke="var(--grid)"/>
+     <text x="${padL-6}" y="${y(v)+4}" text-anchor="end">${v}%</text>`).join('');
+  const ticks = points.map((p, i) => p.q === 1 ?
+    `<text x="${x(i)}" y="${h-8}" text-anchor="middle">${p.y}-${String(p.y+1).slice(2)}</text>` : '').join('');
+  const dots = points.map((p, i) => p.rate == null ? '' :
+    `<circle cx="${x(i).toFixed(1)}" cy="${y(p.rate).toFixed(1)}" r="9" fill="transparent"
+       data-tip="${esc(pl(p.y, p.q))} — ${p.rate}% · ${esc(t('absentLessons', p.absent))}"/>
+     <circle cx="${x(i).toFixed(1)}" cy="${y(p.rate).toFixed(1)}" r="3"
+       fill="${p.rate < 90 ? 'var(--status-crit)' : 'var(--s1)'}" pointer-events="none"/>`).join('');
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%">
+    ${gridlines}
+    <line x1="${padL}" y1="${h-padB}" x2="${w-padR}" y2="${h-padB}" stroke="var(--axis)"/>
+    ${ticks}
+    <path d="${path}" fill="none" stroke="var(--s1)" stroke-width="2"
+      stroke-linecap="round" stroke-linejoin="round"/>
+    ${dots}</svg>`;
+}
+
 function bars(rows, max, wide=false) {
   return rows.map(r => `
     <div class="bar-row${wide ? ' wide' : ''}"><div class="lbl" title="${esc(r.label)}">${esc(r.label)}</div>
@@ -499,6 +539,9 @@ async function vOverview() {
     <div class="tile"><div class="l">${t('modelAccuracy')}</div>
       <div class="v">${o.model && o.model.mae != null ? '±' + fmt(o.model.mae) : '–'}</div>
       <div class="s">${t('modelAccuracySub')}</div></div>
+    ${o.attendance_rate != null ? `
+    <div class="tile"><div class="l">${t('attendance')}</div><div class="v">${fmt(o.attendance_rate, 1)}%</div>
+      <div class="s">${t('attendanceSub', o.chronic_absence)}</div></div>` : ''}
   </div>
   ${tu.paired_delta != null && tu.unpaired_delta != null ? `
   <h2>${t('tutoringWorks')}</h2>
@@ -640,9 +683,15 @@ async function vStudent(id) {
     <div class="tile"><div class="l">${t('peerTutoring')}</div>
       <div class="v">${p.times_tutor}🤝${p.times_tutee.length}</div>
       <div class="s">${t('tutorHelped')}</div></div>
+    ${p.attendance_latest && p.attendance_latest.rate != null ? `
+    <div class="tile"><div class="l">${t('attendance')}</div>
+      <div class="v">${fmt(p.attendance_latest.rate, 1)}%</div>
+      <div class="s">${t('attendanceLatest')}</div></div>` : ''}
   </div>
   <h2>${t('scoreHistory')} <span class="muted" style="font-size:12px;font-weight:400">${t('scoreHistorySub')}</span></h2>
   <div class="card">${scoreChart(p.scores)}</div>
+  ${p.attendance && p.attendance.length ? `<h2>${t('attendanceHistory')}</h2>
+  <div class="card">${attendanceChart(p.attendance)}</div>` : ''}
   ${p.flags.length ? `<h2>${esc(t('flaggedForHeading', target))}</h2>
   <div class="card"><table><tr><th>${t('thSubject')}</th><th>${t('thForecast')}</th>
     <th>${t('thRisk')}</th><th>${t('thWhy')}</th></tr>

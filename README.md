@@ -15,7 +15,8 @@ The project is built for the Armenian school reality: a 10-point grading scale, 
 ## What it does
 
 - **Digital grade book.** Quizzes and end-of-quarter exams, integer 1-10 grades, weighted quarter averages, all in a single SQLite file the school owns.
-- **Prediction after every quarter.** A gradient-boosted model retrains on the school's entire grade history and forecasts every student's next-quarter average in every subject. Anyone forecast below 6 is flagged with a plain-language reason ("declining for several quarters; well below class average"), so the teacher knows who needs support before the quarter starts.
+- **Prediction after every quarter.** A gradient-boosted model retrains on the school's entire grade history and forecasts every student's next-quarter average in every subject. Anyone forecast below 6 is flagged with a plain-language reason ("declining for several quarters; well below class average; frequent absences"), so the teacher knows who needs support before the quarter starts.
+- **Attendance as a signal.** Per-quarter attendance feeds the model and appears in flag reasons ("33% of lessons missed"), on the overview, and on each profile as a trend chart, so a slide that starts with absences is caught early. It deliberately does not affect the Gitak Score: a sick child should not lose leaderboard points.
 - **Peer tutoring groups.** For every flag, Gitak suggests a strong classmate (average 8.5+, not struggling anywhere themselves) as a tutor, at most two tutees per tutor per subject. Then it measures whether tutoring worked: the improvement of paired students vs flagged-but-unpaired ones is a first-class number on the dashboard.
 - **Gitak Score, 0-1000, every quarter.** 60% level, 25% improvement, 15% consistency. A struggling student who climbs is as visible as a stable top student. Badges: class top 3, big riser, perfect quarter, mentor (your tutee improved).
 - **Teacher value-added.** Growth of a teacher's students (Q4 vs Q1) compared with school-wide growth for the same subject and grade level. A teacher who inherits a weak class is not punished for it; one who inherits a strong class gets no free credit.
@@ -118,7 +119,6 @@ tests/          pytest end-to-end suite
 ## Roadmap
 
 - E-journal API connectors (beyond CSV)
-- Attendance as a model feature
 - Alignment with Ministry of Education assessment standards
 - Multi-school benchmarking with privacy-preserving aggregates
 
