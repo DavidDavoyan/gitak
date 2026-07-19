@@ -4,6 +4,8 @@
 
 Gitak turns a school's own exam results into decisions: who needs help next quarter, in which subject, which strong classmate could tutor them, which teachers are actually lifting their students, and which children need an intensive support program before the year slips away.
 
+![Gitak dashboard: school overview with forecasts, tutoring evidence and support lists](docs/dashboard-overview.png)
+
 ## Why
 
 School systems mostly run on intuition and averages. A child falls behind in physics in October and it becomes visible in May, when it is expensive to fix. Gitak's premise is simple: the data already exists inside the grade book. Used honestly, it can catch the slide after the first quarter, not the last one.
