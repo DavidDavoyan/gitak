@@ -51,7 +51,9 @@ def suggest(con, target_year, target_quarter, replace=True):
         con.execute("DELETE FROM pairings WHERE school_year = ? AND quarter = ?",
                     (target_year, target_quarter))
 
-    load = {}
+    # load_by_tutor tracks each tutor's total tutees across subjects, so _pick
+    # is O(1) instead of re-summing the whole load dict for every candidate.
+    load_by_tutor = {}
     pairs = []
     for f in flags:
         tutee, subj_id = f["student_id"], f["subject_id"]
@@ -59,13 +61,13 @@ def suggest(con, target_year, target_quarter, replace=True):
         if cls is None:
             continue
         pool = by_class.get((cls, subj_id), [])
-        pick = _pick(pool, tutee, load)
+        pick = _pick(pool, tutee, load_by_tutor)
         if pick is None:
             pool = by_cohort.get((cohort_of_class[cls], subj_id), [])
-            pick = _pick(pool, tutee, load)
+            pick = _pick(pool, tutee, load_by_tutor)
         if pick is None:
             continue
-        load[(pick, subj_id)] = load.get((pick, subj_id), 0) + 1
+        load_by_tutor[pick] = load_by_tutor.get(pick, 0) + 1
         pairs.append({"tutor_id": pick, "tutee_id": tutee, "subject_id": subj_id})
 
     con.executemany(
@@ -77,12 +79,11 @@ def suggest(con, target_year, target_quarter, replace=True):
     return pairs
 
 
-def _pick(pool, tutee, load):
+def _pick(pool, tutee, load_by_tutor):
     for avg, sid in pool:
         if sid == tutee:
             continue
-        key_load = sum(v for (t, _), v in load.items() if t == sid)
-        if key_load >= config.TUTOR_MAX_LOAD:
+        if load_by_tutor.get(sid, 0) >= config.TUTOR_MAX_LOAD:
             continue
         return sid
     return None

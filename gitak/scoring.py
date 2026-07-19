@@ -11,7 +11,7 @@ Badges: gold/silver/bronze (class top 3), riser (+0.7 or more), perfect
 (every subject at 9+), mentor (your tutee improved by 0.5 or more).
 """
 
-from . import config
+from . import config, fastmath
 
 MENTOR_MIN_TUTEE_DELTA = 0.5
 RISER_MIN_DELTA = 0.7
@@ -34,16 +34,16 @@ def subject_quarter_avgs(con, year, quarter):
 
 
 def _overall(avgs):
-    """student_id -> (mean across subjects, spread) from a subject-avg dict."""
+    """student_id -> (mean across subjects, spread) from a subject-avg dict.
+
+    The per-student mean and population standard deviation are computed by
+    gitak.fastmath, which uses the compiled C kernel when it is available."""
     per_student = {}
     for (sid, _), avg in avgs.items():
         per_student.setdefault(sid, []).append(avg)
-    out = {}
-    for sid, vals in per_student.items():
-        mean = sum(vals) / len(vals)
-        var = sum((v - mean) ** 2 for v in vals) / len(vals)
-        out[sid] = (mean, var ** 0.5)
-    return out
+    sids = list(per_student)
+    stats = fastmath.mean_std([per_student[sid] for sid in sids])
+    return {sid: (mean, spread) for sid, (mean, spread) in zip(sids, stats)}
 
 
 def compute_quarter(con, year, quarter):

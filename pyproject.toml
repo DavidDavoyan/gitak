@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gitak"
+version = "0.4.0"
+description = "Open student-performance platform for Armenian schools"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "David Davoyan" }]
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
+    "numpy>=2.1",
+    "scikit-learn>=1.6",
+]
+
+[project.urls]
+Homepage = "https://github.com/DavidDavoyan/gitak"
+
+[project.scripts]
+gitak = "gitak.cli:main"
+
+[tool.setuptools]
+packages = ["gitak"]

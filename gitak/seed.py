@@ -192,6 +192,8 @@ def seed(con, start_year=2023, n_years=3, seed_value=7, echo=print):
                 att_rows)
 
             grade_rows = []
+            append = grade_rows.append   # hoist the hot attribute lookups out
+            gauss = rng.gauss            # of the ~660k-iteration inner loop
             for gl, cls in year_classes:
                 for s in subjects:
                     if not (s["lmin"] <= gl <= s["lmax"]):
@@ -211,8 +213,8 @@ def seed(con, start_year=2023, n_years=3, seed_value=7, echo=print):
                         exp = _expected(st, s, teff, quarter, gl, boost, rng) - att_penalty
                         exp = max(1.5, exp)
                         for eid in exam_ids:
-                            g = round(max(1, min(10, exp + rng.gauss(0, 0.75))))
-                            grade_rows.append((eid, st.id, g))
+                            g = round(max(1, min(10, exp + gauss(0, 0.75))))
+                            append((eid, st.id, g))
             con.executemany(
                 "INSERT INTO grades (exam_id, student_id, grade) VALUES (?,?,?)", grade_rows)
             n_grades += len(grade_rows)

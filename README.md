@@ -82,6 +82,10 @@ Next quarter's exams test whether it worked  →  repeat
 
 End of year: support-program candidates surface, scores roll into the lifetime record, classes advance, and September starts with a plan instead of a blank page.
 
+## Performance
+
+Gitak's runtime is dominated by native code already: scikit-learn's tree fitting and SQLite. Profiling confirmed there is little pure-Python cost to remove, with one exception, the peer-tutoring matcher, whose per-candidate load check was quadratic in the number of pairings; it is now O(1), a **340x** speedup on that loop at school scale. The remaining deterministic arithmetic (per-student mean and standard deviation) has an optional CPython C extension in [`gitak/_speedups.c`](gitak/_speedups.c) with a byte-for-byte pure-Python fallback, so the repo runs everywhere with no compiler and gets the compiled kernel where a toolchain exists. Details, the profile, and `python bench/benchmark.py` are in [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
+
 ## Honesty about the model
 
 - Features are simple and explainable: recent quarter averages, trend, standing vs class average, grade level. No black-box magic.

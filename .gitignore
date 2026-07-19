@@ -6,3 +6,11 @@ data/*.db
 data/*.db-shm
 data/*.db-wal
 *.pkl
+
+# build artifacts (optional C extension)
+build/
+dist/
+*.egg-info/
+*.so
+*.pyd
+*.o
