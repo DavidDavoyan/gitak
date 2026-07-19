@@ -45,6 +45,12 @@
   }
   nav a.on { background: var(--s1); color: #fff; }
   nav a:not(.on):hover { background: var(--neutral-mid); }
+  .lang { display: flex; border: 1px solid var(--axis); border-radius: 8px; overflow: hidden; }
+  .lang button {
+    border: 0; background: var(--surface); color: var(--ink-2);
+    font: inherit; font-size: 12px; font-weight: 600; padding: 5px 10px; cursor: pointer;
+  }
+  .lang button.on { background: var(--s1); color: #fff; }
   main { max-width: 1100px; margin: 0 auto; padding: 20px 22px 60px; }
   h2 { font-size: 17px; margin: 26px 0 10px; }
   h2:first-child { margin-top: 4px; }
@@ -138,18 +144,213 @@
 </head>
 <body>
 <header>
-  <div class="logo">Գիտակ<small>Gitak · student performance, openly</small></div>
+  <div class="logo">Գիտակ<small id="tagline"></small></div>
   <div class="period" id="period"></div>
-  <nav id="nav">
-    <a href="#overview">Overview</a><a href="#classes">Classes</a>
-    <a href="#students">Students</a><a href="#teachers">Teachers</a>
-    <a href="#about">About</a>
-  </nav>
+  <nav id="nav"></nav>
+  <div class="lang" id="lang">
+    <button data-l="en">EN</button><button data-l="hy">ՀԱՅ</button>
+  </div>
 </header>
-<main id="view"><div class="loading">Loading…</div></main>
+<main id="view"><div class="loading">…</div></main>
 <div id="tip"></div>
 <script>
-const $ = (h) => { const d = document.createElement('div'); d.innerHTML = h; return d; };
+/* ---------------- language ---------------- */
+let lang = new URLSearchParams(location.search).get('lang')
+        || localStorage.getItem('gitak-lang') || 'en';
+if (lang !== 'hy') lang = 'en';
+
+const T = {
+en: {
+  tagline: 'Gitak · student performance, openly',
+  navOverview: 'Overview', navClasses: 'Classes', navStudents: 'Students',
+  navTeachers: 'Teachers', navAbout: 'About',
+  loading: 'Loading…',
+  loadError: (m) => `Could not load this view (${m}).`,
+  noData: 'No data yet. Run <code>python -m gitak demo</code>.',
+  periodLine: (a, b) => `history through ${a} · planning ${b}`,
+  activeStudents: 'Active students',
+  classesTeachers: (c, t) => `${c} classes · ${t} teachers`,
+  schoolAverage: 'School average',
+  vsPrevQuarter: 'vs previous quarter',
+  flaggedFor: (p) => `Flagged for ${p}`,
+  flagsSub: (n, h) => `${n} subject flags · ${h} high risk`,
+  tutoringPairs: 'Tutoring pairs',
+  tutoringPairsSub: 'strong students helping flagged ones',
+  modelAccuracy: 'Model accuracy',
+  modelAccuracySub: 'holdout error on a 10-point scale',
+  tutoringWorks: 'Does peer tutoring work here?',
+  tutoringLine: (pd, ud, np, nu) => `<b>${pd}</b> average move per quarter for tutored students
+    in the paired subject, vs <b>${ud}</b> for flagged students without a tutor
+    (${np} vs ${nu} student-quarters).`,
+  tutoringNote: 'Demo data simulates the tutoring effect; in a real school this number is the evidence.',
+  whereSupport: 'Where support is needed next quarter',
+  flagsByClass: 'Flags by class', flagsBySubject: 'Flags by subject',
+  supportCandidates: (y) => `Support-program candidates (end of ${y})`,
+  thStudent: 'Student', thClass: 'Class', thWeakSubjects: 'Weak subjects',
+  thWorstAvg: 'Worst avg', thChange: 'Change', thAvg: 'Avg', thScore: 'Score',
+  mostImproved: 'Most improved last quarter',
+  rerun: 'Re-run analysis',
+  rerunNote: ' retrains the model on all grades and refreshes flags and pairings',
+  rerunRunning: ' running…',
+  rerunDone: (mae, f, p) => ` done: MAE ±${mae} · ${f} flags · ${p} pairings`,
+  classesTitle: (p) => `Classes · ${p} composition`,
+  clsLine1: (n, a) => `${n} students · avg ${a}`,
+  clsFlags: (n) => `${n} flags next quarter`, clsNoFlags: 'no flags next quarter',
+  allClasses: '← all classes', back: '← back',
+  classWord: 'Class',
+  leaderboard: (p) => `Leaderboard · ${p}`,
+  thBadges: 'Badges',
+  needsSupport: (p) => `Needs support in ${p}`,
+  thSubject: 'Subject', thForecast: 'Forecast', thRisk: 'Risk', thWhy: 'Why',
+  noClassFlags: 'No flags for this class.',
+  suggestedPairs: 'Suggested tutoring pairs',
+  thTutor: 'Tutor', thHelps: 'Helps',
+  noPairs: 'No pairings suggested.',
+  studentsTitle: 'Students',
+  searchPlaceholder: 'Search by name, e.g. Ani…',
+  searchHint: 'Type at least two letters.',
+  searchNone: 'No students found.',
+  gitakScore: 'Gitak score',
+  rankInClass: (r) => `rank ${r} in class`,
+  quarterAverage: 'Quarter average', vsPrev: 'vs previous',
+  badgesTile: 'Badges',
+  earnedOver: (n) => `earned over ${n} quarters`,
+  peerTutoring: 'Peer tutoring',
+  tutorHelped: 'times tutor · times helped',
+  scoreHistory: 'Score history',
+  scoreHistorySub: '0-1000: level + improvement + consistency',
+  flaggedForHeading: (p) => `Flagged for ${p}`,
+  uniTracks: 'University tracks',
+  uniTracksSub: "from this year's subject strengths",
+  uniTracksNote: "Readiness relative to the 10-point scale; a guide for the student's own choice, not a gate.",
+  subjectsSince: (y) => `Subjects · quarter averages since ${y}`,
+  downloadTranscript: 'Download lifetime transcript (JSON)',
+  transcriptNote: '· the full record, owned by the student',
+  graduated: 'graduated', gradeN: (n) => `grade ${n}`,
+  teacherVA: 'Teacher value-added',
+  thTeacher: 'Teacher', thValueAdded: 'Value-added', thStudentYears: 'Student-years',
+  teacherNote: `Growth of the teacher's students (Q4 vs Q1) compared with school-wide growth for the
+    same subject and grade level. A teacher who inherits a weak class is not punished for it, and one who
+    inherits a strong class gets no free credit.`,
+  score: (y, q) => `${y}-${String(y + 1).slice(2)} Q${q}`,
+  scoreTip: (p, s, a, r) => `${p} — score ${s}, avg ${a}, rank ${r}`,
+  badgeNames: { gold: '1st in class', silver: '2nd in class', bronze: '3rd in class',
+    riser: 'big improvement', perfect: 'all subjects 9+', mentor: 'helped a classmate improve' },
+  riskHigh: '▲ high risk', riskMedium: '● medium',
+  track: { STEM: 'STEM', Humanities: 'Humanities', Languages: 'Languages', Arts: 'Arts' },
+},
+hy: {
+  tagline: 'Gitak · աշակերտի առաջադիմությունը՝ բաց',
+  navOverview: 'Ակնարկ', navClasses: 'Դասարաններ', navStudents: 'Աշակերտներ',
+  navTeachers: 'Ուսուցիչներ', navAbout: 'Մասին',
+  loading: 'Բեռնվում է…',
+  loadError: (m) => `Չհաջողվեց բեռնել (${m})։`,
+  noData: 'Դեռ տվյալներ չկան։ Գործարկեք <code>python -m gitak demo</code>։',
+  periodLine: (a, b) => `պատմությունը մինչև ${a} · պլանավորում՝ ${b}`,
+  activeStudents: 'Ակտիվ աշակերտներ',
+  classesTeachers: (c, t) => `${c} դասարան · ${t} ուսուցիչ`,
+  schoolAverage: 'Դպրոցի միջինը',
+  vsPrevQuarter: 'նախորդ քառորդի համեմատ',
+  flaggedFor: (p) => `Աջակցության կարիք · ${p}`,
+  flagsSub: (n, h) => `${n} առարկայական նշում · ${h} բարձր ռիսկ`,
+  tutoringPairs: 'Կրկնուսույցների զույգեր',
+  tutoringPairsSub: 'ուժեղ աշակերտներն օգնում են դժվարացողներին',
+  modelAccuracy: 'Մոդելի ճշգրտություն',
+  modelAccuracySub: 'սխալը 10 բալանոց սանդղակով',
+  tutoringWorks: 'Աշխատո՞ւմ է կրկնուսուցությունը',
+  tutoringLine: (pd, ud, np, nu) => `<b>${pd}</b> միջին փոփոխություն մեկ քառորդում կրկնուսույց
+    ունեցող աշակերտների մոտ տվյալ առարկայում, ընդդեմ <b>${ud}</b>-ի՝ առանց կրկնուսույցի
+    (${np} և ${nu} աշակերտ-քառորդ)։`,
+  tutoringNote: 'Դեմո տվյալները մոդելավորում են կրկնուսուցության էֆեկտը. իրական դպրոցում այս թիվը կլինի ապացույցը։',
+  whereSupport: 'Որտեղ է պետք աջակցություն հաջորդ քառորդում',
+  flagsByClass: 'Նշումներ ըստ դասարանների', flagsBySubject: 'Նշումներ ըստ առարկաների',
+  supportCandidates: (y) => `Աջակցության ծրագրի թեկնածուներ (${y}-ի վերջ)`,
+  thStudent: 'Աշակերտ', thClass: 'Դասարան', thWeakSubjects: 'Թույլ առարկաներ',
+  thWorstAvg: 'Ամենացածր միջին', thChange: 'Փոփոխություն', thAvg: 'Միջին', thScore: 'Միավոր',
+  mostImproved: 'Ամենամեծ առաջընթացը անցած քառորդում',
+  rerun: 'Կրկնել վերլուծությունը',
+  rerunNote: ' վերապատրաստում է մոդելը բոլոր գնահատականների վրա և թարմացնում նշումներն ու զույգերը',
+  rerunRunning: ' կատարվում է…',
+  rerunDone: (mae, f, p) => ` պատրաստ է՝ MAE ±${mae} · ${f} նշում · ${p} զույգ`,
+  classesTitle: (p) => `Դասարաններ · ${p} կազմ`,
+  clsLine1: (n, a) => `${n} աշակերտ · միջինը ${a}`,
+  clsFlags: (n) => `${n} նշում հաջորդ քառորդում`, clsNoFlags: 'նշումներ չկան',
+  allClasses: '← բոլոր դասարանները', back: '← հետ',
+  classWord: 'Դասարան',
+  leaderboard: (p) => `Վարկանիշ · ${p}`,
+  thBadges: 'Կրծքանշաններ',
+  needsSupport: (p) => `Աջակցության կարիք ${p}-ում`,
+  thSubject: 'Առարկա', thForecast: 'Կանխատեսում', thRisk: 'Ռիսկ', thWhy: 'Պատճառ',
+  noClassFlags: 'Այս դասարանում նշումներ չկան։',
+  suggestedPairs: 'Առաջարկվող կրկնուսույցների զույգեր',
+  thTutor: 'Կրկնուսույց', thHelps: 'Օգնում է',
+  noPairs: 'Զույգեր չեն առաջարկվել։',
+  studentsTitle: 'Աշակերտներ',
+  searchPlaceholder: 'Որոնել անունով, օր.՝ Ani…',
+  searchHint: 'Մուտքագրեք առնվազն երկու տառ։',
+  searchNone: 'Աշակերտներ չեն գտնվել։',
+  gitakScore: 'Գիտակ միավոր',
+  rankInClass: (r) => `${r}-րդ տեղը դասարանում`,
+  quarterAverage: 'Քառորդի միջինը', vsPrev: 'նախորդի համեմատ',
+  badgesTile: 'Կրծքանշաններ',
+  earnedOver: (n) => `վաստակած ${n} քառորդում`,
+  peerTutoring: 'Կրկնուսուցություն',
+  tutorHelped: 'անգամ կրկնուսույց · անգամ օգնություն ստացած',
+  scoreHistory: 'Միավորի պատմություն',
+  scoreHistorySub: '0-1000՝ մակարդակ + առաջընթաց + կայունություն',
+  flaggedForHeading: (p) => `Նշված ${p}-ի համար`,
+  uniTracks: 'Համալսարանական ուղղություններ',
+  uniTracksSub: 'այս տարվա առարկայական ուժեղ կողմերից',
+  uniTracksNote: 'Պատրաստվածությունը 10 բալանոց սանդղակի նկատմամբ. ուղեցույց աշակերտի սեփական ընտրության համար, ոչ թե արգելք։',
+  subjectsSince: (y) => `Առարկաներ · քառորդային միջինները ${y}-ից`,
+  downloadTranscript: 'Ներբեռնել ամբողջական վկայագիրը (JSON)',
+  transcriptNote: '· ամբողջ պատմությունը, որը պատկանում է աշակերտին',
+  graduated: 'ավարտած', gradeN: (n) => `${n}-րդ դասարան`,
+  teacherVA: 'Ուսուցչի ավելացված արժեքը',
+  thTeacher: 'Ուսուցիչ', thValueAdded: 'Ավելացված արժեք', thStudentYears: 'Աշակերտ-տարիներ',
+  teacherNote: `Ուսուցչի աշակերտների աճը (Ք4՝ Ք1-ի համեմատ)՝ համեմատած դպրոցի միջին աճի հետ նույն
+    առարկայի և դասարանի համար։ Թույլ դասարան ստացած ուսուցիչը դրա համար չի պատժվում,
+    իսկ ուժեղ դասարան ստացածը անվճար վարկանիշ չի ստանում։`,
+  score: (y, q) => `${y}-${String(y + 1).slice(2)} Ք${q}`,
+  scoreTip: (p, s, a, r) => `${p} — միավոր ${s}, միջին ${a}, տեղ ${r}`,
+  badgeNames: { gold: '1-ինը դասարանում', silver: '2-րդը դասարանում', bronze: '3-րդը դասարանում',
+    riser: 'մեծ առաջընթաց', perfect: 'բոլոր առարկաները 9+', mentor: 'օգնել է դասընկերոջը' },
+  riskHigh: '▲ բարձր ռիսկ', riskMedium: '● միջին',
+  track: { STEM: 'Ճշգրիտ (STEM)', Humanities: 'Հումանիտար', Languages: 'Լեզուներ', Arts: 'Արվեստ' },
+},
+};
+
+function t(key, ...args) {
+  const v = (T[lang] && T[lang][key]) ?? T.en[key] ?? key;
+  return typeof v === 'function' ? v(...args) : v;
+}
+const pl = (y, q) => t('score', y, q);
+const HY_LETTERS = { A: 'Ա', B: 'Բ', C: 'Գ', D: 'Դ', E: 'Ե', F: 'Զ' };
+const clsName = (label) => {
+  if (label === 'graduated') return t('graduated');
+  return lang === 'hy' ? String(label).replace(/[A-F]$/, m => HY_LETTERS[m]) : label;
+};
+const subjText = (en, hy) => lang === 'hy' ? `${hy} · ${en}` : `${en} · ${hy}`;
+const subjHtml = (en, hy) => lang === 'hy'
+  ? `${esc(hy)} <span class="muted">· ${esc(en)}</span>`
+  : `${esc(en)} <span class="muted">· ${esc(hy)}</span>`;
+
+const REASON_HY = [
+  [/forecast (\d+(?:\.\d+)?) next quarter/, 'կանխատեսում՝ $1 հաջորդ քառորդում'],
+  [/declining for several quarters/, 'նվազում է մի քանի քառորդ շարունակ'],
+  [/well below class average/, 'դասարանի միջինից զգալի ցածր'],
+  [/already at (\d+(?:\.\d+)?)/, 'արդեն $1 է'],
+  [/subject-specific dip, otherwise solid/, 'անկում միայն այս առարկայում, մնացածը կայուն է'],
+  [/quarter average (\d+(?:\.\d+)?) is below (\d+)/, 'քառորդի միջինը ($1) ցածր է $2-ից'],
+];
+function reasonText(r) {
+  if (lang !== 'hy' || !r) return r;
+  let out = r;
+  for (const [re, sub] of REASON_HY) out = out.replace(re, sub);
+  return out;
+}
+
+/* ---------------- shared helpers ---------------- */
 const view = document.getElementById('view');
 const tip = document.getElementById('tip');
 const esc = (s) => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -159,11 +360,10 @@ const deltaHtml = (d) => d == null ? '<span class="muted">–</span>'
   : d >= 0 ? `<span class="up">▲ +${(+d).toFixed(2)}</span>`
            : `<span class="down">▼ ${(+d).toFixed(2)}</span>`;
 const BADGE = { gold:'🥇', silver:'🥈', bronze:'🥉', riser:'🚀', perfect:'⭐', mentor:'🤝' };
-const BADGE_NAME = { gold:'1st in class', silver:'2nd in class', bronze:'3rd in class',
-  riser:'big improvement', perfect:'all subjects 9+', mentor:'helped a classmate improve' };
+const badgeName = (code) => (T[lang].badgeNames || T.en.badgeNames)[code] || code;
 const riskChip = (r) => r === 'high'
-  ? '<span class="chip high">▲ high risk</span>'
-  : '<span class="chip medium">● medium</span>';
+  ? `<span class="chip high">${t('riskHigh')}</span>`
+  : `<span class="chip medium">${t('riskMedium')}</span>`;
 
 function showTip(html, ev) {
   tip.innerHTML = html; tip.style.display = 'block';
@@ -174,14 +374,13 @@ const hideTip = () => tip.style.display = 'none';
 
 function sparkline(points, w=220, h=44, flagged=false) {
   if (!points.length) return '';
-  const xs = points.map((_, i) => i), ys = points.map(p => p.avg);
-  const x = i => 4 + i * (w - 30) / Math.max(xs.length - 1, 1);
+  const x = i => 4 + i * (w - 30) / Math.max(points.length - 1, 1);
   const y = v => h - 6 - (v - 1) * (h - 12) / 9;   /* fixed 1..10 scale */
   const path = points.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.avg).toFixed(1)}`).join('');
   const last = points[points.length - 1];
   const dots = points.map((p, i) =>
     `<circle cx="${x(i).toFixed(1)}" cy="${y(p.avg).toFixed(1)}" r="8" fill="transparent"
-      data-tip="${esc(p.y)}-${String(p.y+1).slice(2)} Q${p.q}: ${p.avg.toFixed(1)}"/>`).join('');
+      data-tip="${esc(pl(p.y, p.q))}: ${p.avg.toFixed(1)}"/>`).join('');
   return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" class="spark">
     <line x1="4" y1="${y(6).toFixed(1)}" x2="${w-26}" y2="${y(6).toFixed(1)}"
       stroke="var(--grid)" stroke-dasharray="3 3"/>
@@ -205,7 +404,7 @@ function scoreChart(scores) {
     `<text x="${x(i)}" y="${h-8}" text-anchor="middle">${s.y}-${String(s.y+1).slice(2)}</text>` : '').join('');
   const dots = scores.map((s, i) =>
     `<circle cx="${x(i).toFixed(1)}" cy="${y(s.score).toFixed(1)}" r="9" fill="transparent"
-       data-tip="${s.y}-${String(s.y+1).slice(2)} Q${s.q} — score ${s.score}, avg ${fmt(s.quarter_avg)}, rank ${s.rank_class}"/>
+       data-tip="${esc(t('scoreTip', pl(s.y, s.q), s.score, fmt(s.quarter_avg), s.rank_class))}"/>
      <circle cx="${x(i).toFixed(1)}" cy="${y(s.score).toFixed(1)}" r="3" fill="var(--s1)" pointer-events="none"/>`).join('');
   return `<svg viewBox="0 0 ${w} ${h}" width="100%">
     ${gridlines}
@@ -223,123 +422,143 @@ function bars(rows, max, wide=false) {
       <div class="n">${r.value}</div></div>`).join('');
 }
 
+function setPeriodLine(period) {
+  if (!period) return;
+  document.getElementById('period').textContent = t('periodLine',
+    pl(period.latest_year, period.latest_quarter),
+    pl(period.target_year, period.target_quarter));
+}
+
 /* ---------------- views ---------------- */
 
 async function vOverview() {
   const o = await api('/overview');
-  if (o.empty) { view.innerHTML = '<div class="loading">No data yet. Run <code>python -m gitak demo</code>.</div>'; return; }
-  document.getElementById('period').textContent =
-    `history through ${o.period.latest_label} · planning ${o.period.target_label}`;
+  if (o.empty) { view.innerHTML = `<div class="loading">${t('noData')}</div>`; return; }
+  setPeriodLine(o.period);
+  const target = pl(o.period.target_year, o.period.target_quarter);
   const byClass = {}, bySubject = {};
   for (const h of o.heatmap) {
     byClass[h.class] = (byClass[h.class] || 0) + h.count;
-    bySubject[h.subject + ' · ' + h.subject_hy] = (bySubject[h.subject + ' · ' + h.subject_hy] || 0) + h.count;
+    const key = subjText(h.subject, h.subject_hy);
+    bySubject[key] = (bySubject[key] || 0) + h.count;
   }
   const clsRows = Object.entries(byClass).sort((a,b) => b[1]-a[1]).slice(0, 12)
-    .map(([label, value]) => ({label, value}));
+    .map(([label, value]) => ({label: clsName(label), value}));
   const subjRows = Object.entries(bySubject).sort((a,b) => b[1]-a[1]).slice(0, 10)
     .map(([label, value]) => ({label, value}));
   const maxC = Math.max(...clsRows.map(r => r.value), 1);
   const maxS = Math.max(...subjRows.map(r => r.value), 1);
-  const t = o.tutoring || {};
+  const tu = o.tutoring || {};
+  const latestYear = `${o.period.latest_year}-${String(o.period.latest_year + 1).slice(2)}`;
   view.innerHTML = `
   <div class="tiles">
-    <div class="tile"><div class="l">Active students</div><div class="v">${o.n_students_active}</div>
-      <div class="s">${o.n_classes} classes · ${o.n_teachers} teachers</div></div>
-    <div class="tile"><div class="l">School average</div><div class="v">${fmt(o.school_avg)}</div>
-      <div class="s">${deltaHtml(o.school_avg_delta)} vs previous quarter</div></div>
-    <div class="tile"><div class="l">Flagged for ${esc(o.period.target_label)}</div>
+    <div class="tile"><div class="l">${t('activeStudents')}</div><div class="v">${o.n_students_active}</div>
+      <div class="s">${t('classesTeachers', o.n_classes, o.n_teachers)}</div></div>
+    <div class="tile"><div class="l">${t('schoolAverage')}</div><div class="v">${fmt(o.school_avg)}</div>
+      <div class="s">${deltaHtml(o.school_avg_delta)} ${t('vsPrevQuarter')}</div></div>
+    <div class="tile"><div class="l">${esc(t('flaggedFor', target))}</div>
       <div class="v">${o.flagged_students}</div>
-      <div class="s">${o.flags_total} subject flags · ${o.flags_high} high risk</div></div>
-    <div class="tile"><div class="l">Tutoring pairs</div><div class="v">${o.pairings_target}</div>
-      <div class="s">strong students helping flagged ones</div></div>
-    <div class="tile"><div class="l">Model accuracy</div>
+      <div class="s">${t('flagsSub', o.flags_total, o.flags_high)}</div></div>
+    <div class="tile"><div class="l">${t('tutoringPairs')}</div><div class="v">${o.pairings_target}</div>
+      <div class="s">${t('tutoringPairsSub')}</div></div>
+    <div class="tile"><div class="l">${t('modelAccuracy')}</div>
       <div class="v">${o.model && o.model.mae != null ? '±' + fmt(o.model.mae) : '–'}</div>
-      <div class="s">holdout error on a 10-point scale</div></div>
+      <div class="s">${t('modelAccuracySub')}</div></div>
   </div>
-  ${t.paired_delta != null && t.unpaired_delta != null ? `
-  <h2>Does peer tutoring work here?</h2>
-  <div class="card"><b>${t.paired_delta >= 0 ? '+' : ''}${fmt(t.paired_delta)}</b> average move per quarter
-    for tutored students in the paired subject, vs <b>${t.unpaired_delta >= 0 ? '+' : ''}${fmt(t.unpaired_delta)}</b>
-    for flagged students without a tutor (${t.n_paired} vs ${t.n_unpaired} student-quarters).
-    <div class="note">Demo data simulates the tutoring effect; in a real school this number is the evidence.</div></div>` : ''}
-  <h2>Where support is needed next quarter</h2>
+  ${tu.paired_delta != null && tu.unpaired_delta != null ? `
+  <h2>${t('tutoringWorks')}</h2>
+  <div class="card">${t('tutoringLine',
+      (tu.paired_delta >= 0 ? '+' : '') + fmt(tu.paired_delta),
+      (tu.unpaired_delta >= 0 ? '+' : '') + fmt(tu.unpaired_delta),
+      tu.n_paired, tu.n_unpaired)}
+    <div class="note">${t('tutoringNote')}</div></div>` : ''}
+  <h2>${t('whereSupport')}</h2>
   <div class="cards2">
-    <div class="card"><h3>Flags by class</h3>${bars(clsRows, maxC)}</div>
-    <div class="card"><h3>Flags by subject</h3>${bars(subjRows, maxS, true)}</div>
+    <div class="card"><h3>${t('flagsByClass')}</h3>${bars(clsRows, maxC)}</div>
+    <div class="card"><h3>${t('flagsBySubject')}</h3>${bars(subjRows, maxS, true)}</div>
   </div>
   <div class="cards2" style="margin-top:12px">
-    <div class="card"><h3>Support-program candidates (end of ${esc(o.period.latest_label).slice(0,7)})</h3>
-      <table><tr><th>Student</th><th>Class</th><th>Weak subjects</th><th>Worst avg</th></tr>
+    <div class="card"><h3>${esc(t('supportCandidates', latestYear))}</h3>
+      <table><tr><th>${t('thStudent')}</th><th>${t('thClass')}</th>
+      <th>${t('thWeakSubjects')}</th><th>${t('thWorstAvg')}</th></tr>
       ${o.support_candidates.map(s => `<tr class="click" data-go="#student/${s.student_id}">
-        <td>${esc(s.name)}</td><td>${esc(s.class)}</td>
+        <td>${esc(s.name)}</td><td>${esc(clsName(s.class))}</td>
         <td>${s.weak_subjects}/${s.subjects_total}</td><td>${fmt(s.worst_avg)}</td></tr>`).join('')}
       </table></div>
-    <div class="card"><h3>Most improved last quarter</h3>
-      <table><tr><th>Student</th><th>Class</th><th>Change</th><th>Avg</th><th>Score</th></tr>
+    <div class="card"><h3>${t('mostImproved')}</h3>
+      <table><tr><th>${t('thStudent')}</th><th>${t('thClass')}</th>
+      <th>${t('thChange')}</th><th>${t('thAvg')}</th><th>${t('thScore')}</th></tr>
       ${o.top_improved.map(s => `<tr class="click" data-go="#student/${s.student_id}">
-        <td>${esc(s.name)}</td><td>${esc(s.class)}</td><td>${deltaHtml(s.delta)}</td>
+        <td>${esc(s.name)}</td><td>${esc(clsName(s.class))}</td><td>${deltaHtml(s.delta)}</td>
         <td>${fmt(s.avg)}</td><td>${s.score}</td></tr>`).join('')}
       </table></div>
   </div>
-  <p style="margin-top:16px"><button class="btn primary" id="rerun">Re-run analysis</button>
-  <span class="muted" id="rerun-note"> retrains the model on all grades and refreshes flags and pairings</span></p>`;
+  <p style="margin-top:16px"><button class="btn primary" id="rerun">${t('rerun')}</button>
+  <span class="muted" id="rerun-note">${t('rerunNote')}</span></p>`;
   document.getElementById('rerun').onclick = async (e) => {
     e.target.disabled = true;
-    document.getElementById('rerun-note').textContent = ' running…';
+    document.getElementById('rerun-note').textContent = t('rerunRunning');
     const r = await fetch('/api/run/predict', {method: 'POST'}).then(r => r.json());
     document.getElementById('rerun-note').textContent =
-      ` done: MAE ±${fmt(r.mae)} · ${r.n_flagged} flags · ${r.n_pairings} pairings`;
+      t('rerunDone', fmt(r.mae), r.n_flagged, r.n_pairings);
     e.target.disabled = false;
   };
 }
 
 async function vClasses() {
   const d = await api('/classes');
-  view.innerHTML = `<h2>Classes · ${esc(d.period.target_label)} composition</h2>
+  setPeriodLine(d.period);
+  const target = pl(d.period.target_year, d.period.target_quarter);
+  view.innerHTML = `<h2>${esc(t('classesTitle', target))}</h2>
   <div class="grid-classes">` + d.classes.map(c => `
-    <div class="cls" data-go="#class/${c.id}"><div class="t">${esc(c.label)}</div>
-      <div class="m">${c.n_students} students · avg ${fmt(c.avg)}</div>
-      <div class="m">${c.flags ? c.flags + ' flags' : 'no flags'} next quarter</div>
+    <div class="cls" data-go="#class/${c.id}"><div class="t">${esc(clsName(c.label))}</div>
+      <div class="m">${t('clsLine1', c.n_students, fmt(c.avg))}</div>
+      <div class="m">${c.flags ? t('clsFlags', c.flags) : t('clsNoFlags')}</div>
     </div>`).join('') + '</div>';
 }
 
 async function vClass(id) {
   const d = await api('/classes/' + id);
+  setPeriodLine(d.period);
+  const latest = pl(d.period.latest_year, d.period.latest_quarter);
+  const target = pl(d.period.target_year, d.period.target_quarter);
   view.innerHTML = `
-  <a class="plain back" href="#classes">← all classes</a>
-  <h2 style="margin-top:0">Class ${esc(d.label)}</h2>
+  <a class="plain back" href="#classes">${t('allClasses')}</a>
+  <h2 style="margin-top:0">${t('classWord')} ${esc(clsName(d.label))}</h2>
   <div class="cards2">
-    <div class="card"><h3>Leaderboard · ${esc(d.period.latest_label)}</h3>
-      <table><tr><th>#</th><th>Student</th><th>Score</th><th>Avg</th><th>Change</th><th>Badges</th></tr>
+    <div class="card"><h3>${esc(t('leaderboard', latest))}</h3>
+      <table><tr><th>#</th><th>${t('thStudent')}</th><th>${t('thScore')}</th>
+      <th>${t('thAvg')}</th><th>${t('thChange')}</th><th>${t('thBadges')}</th></tr>
       ${d.roster.map(r => `<tr class="click" data-go="#student/${r.id}">
         <td>${r.rank_class ?? '–'}</td><td>${esc(r.first_name)} ${esc(r.last_name)}</td>
         <td><b>${r.score ?? '–'}</b></td><td>${fmt(r.quarter_avg)}</td>
         <td>${deltaHtml(r.delta)}</td>
-        <td class="badges">${r.badges.map(b => `<span title="${BADGE_NAME[b]}">${BADGE[b]}</span>`).join('')}</td>
+        <td class="badges">${r.badges.map(b => `<span title="${esc(badgeName(b))}">${BADGE[b]}</span>`).join('')}</td>
       </tr>`).join('')}</table></div>
     <div>
-      <div class="card"><h3>Needs support in ${esc(d.period.target_label)}</h3>
-      ${d.flags.length ? `<table><tr><th>Student</th><th>Subject</th><th>Forecast</th><th>Risk</th></tr>
+      <div class="card"><h3>${esc(t('needsSupport', target))}</h3>
+      ${d.flags.length ? `<table><tr><th>${t('thStudent')}</th><th>${t('thSubject')}</th>
+        <th>${t('thForecast')}</th><th>${t('thRisk')}</th></tr>
         ${d.flags.map(f => `<tr class="click" data-go="#student/${f.student_id}">
-          <td>${esc(f.name)}</td><td>${esc(f.subject)} <span class="muted">· ${esc(f.subject_hy)}</span></td>
+          <td>${esc(f.name)}</td><td>${subjHtml(f.subject, f.subject_hy)}</td>
           <td>${fmt(f.predicted, 1)}</td><td>${riskChip(f.risk)}</td></tr>
-          <tr><td colspan="4" class="flag-reason">${esc(f.reason)}</td></tr>`).join('')}</table>`
-        : '<div class="muted">No flags for this class.</div>'}</div>
-      <div class="card" style="margin-top:12px"><h3>Suggested tutoring pairs</h3>
-      ${d.pairings.length ? `<table><tr><th>Subject</th><th>Tutor</th><th>Helps</th></tr>
-        ${d.pairings.map(p => `<tr><td>${esc(p.subject)}</td>
+          <tr><td colspan="4" class="flag-reason">${esc(reasonText(f.reason))}</td></tr>`).join('')}</table>`
+        : `<div class="muted">${t('noClassFlags')}</div>`}</div>
+      <div class="card" style="margin-top:12px"><h3>${t('suggestedPairs')}</h3>
+      ${d.pairings.length ? `<table><tr><th>${t('thSubject')}</th><th>${t('thTutor')}</th>
+        <th>${t('thHelps')}</th></tr>
+        ${d.pairings.map(p => `<tr><td>${subjHtml(p.subject, p.subject_hy)}</td>
           <td><a class="plain" href="#student/${p.tutor_id}">${esc(p.tutor)}</a></td>
           <td><a class="plain" href="#student/${p.tutee_id}">${esc(p.tutee)}</a></td></tr>`).join('')}</table>`
-        : '<div class="muted">No pairings suggested.</div>'}</div>
+        : `<div class="muted">${t('noPairs')}</div>`}</div>
     </div>
   </div>`;
 }
 
 async function vStudents() {
-  view.innerHTML = `<h2>Students</h2>
-  <div class="search"><input id="q" placeholder="Search by name, e.g. Ani…" autofocus></div>
-  <div id="results" class="muted">Type at least two letters.</div>`;
+  view.innerHTML = `<h2>${t('studentsTitle')}</h2>
+  <div class="search"><input id="q" placeholder="${esc(t('searchPlaceholder'))}" autofocus></div>
+  <div id="results" class="muted">${t('searchHint')}</div>`;
   const input = document.getElementById('q');
   let tId;
   input.oninput = () => {
@@ -347,91 +566,125 @@ async function vStudents() {
     tId = setTimeout(async () => {
       const q = input.value.trim();
       const box = document.getElementById('results');
-      if (q.length < 2) { box.textContent = 'Type at least two letters.'; return; }
+      if (q.length < 2) { box.textContent = t('searchHint'); return; }
       const r = await api('/search?q=' + encodeURIComponent(q));
       box.innerHTML = r.results.length
-        ? '<table><tr><th>Student</th><th>Class</th></tr>' + r.results.map(s =>
-          `<tr class="click" data-go="#student/${s.id}"><td>${esc(s.name)}</td><td>${esc(s.class)}</td></tr>`).join('') + '</table>'
-        : 'No students found.';
+        ? `<table><tr><th>${t('thStudent')}</th><th>${t('thClass')}</th></tr>` + r.results.map(s =>
+          `<tr class="click" data-go="#student/${s.id}"><td>${esc(s.name)}</td>
+           <td>${esc(clsName(s.class))}</td></tr>`).join('') + '</table>'
+        : t('searchNone');
     }, 200);
   };
 }
 
 async function vStudent(id) {
   const p = await api('/students/' + id);
+  setPeriodLine(p.period);
   const latest = p.scores[p.scores.length - 1];
+  const target = pl(p.period.target_year, p.period.target_quarter);
   const flaggedSubjects = new Set(p.flags.map(f => f.subject));
   const badgeCounts = {};
   for (const b of p.badges) badgeCounts[b.code] = (badgeCounts[b.code] || 0) + 1;
   view.innerHTML = `
-  <a class="plain back" href="javascript:history.back()">← back</a>
+  <a class="plain back" href="javascript:history.back()">${t('back')}</a>
   <h2 style="margin-top:0">${esc(p.name)}
-    <span class="muted" style="font-weight:400">· class ${esc(p.class)} ·
-    ${p.status === 'graduated' ? 'graduated' : 'grade ' + p.grade_level}</span></h2>
+    <span class="muted" style="font-weight:400">· ${t('classWord').toLowerCase()} ${esc(clsName(p.class))} ·
+    ${p.status === 'graduated' ? t('graduated') : esc(t('gradeN', p.grade_level))}</span></h2>
   <div class="tiles">
-    <div class="tile"><div class="l">Gitak score</div><div class="v">${latest ? latest.score : '–'}</div>
-      <div class="s">rank ${latest ? latest.rank_class : '–'} in class</div></div>
-    <div class="tile"><div class="l">Quarter average</div><div class="v">${latest ? fmt(latest.quarter_avg) : '–'}</div>
-      <div class="s">${latest ? deltaHtml(latest.delta) : ''} vs previous</div></div>
-    <div class="tile"><div class="l">Badges</div>
+    <div class="tile"><div class="l">${t('gitakScore')}</div><div class="v">${latest ? latest.score : '–'}</div>
+      <div class="s">${latest ? esc(t('rankInClass', latest.rank_class)) : ''}</div></div>
+    <div class="tile"><div class="l">${t('quarterAverage')}</div><div class="v">${latest ? fmt(latest.quarter_avg) : '–'}</div>
+      <div class="s">${latest ? deltaHtml(latest.delta) : ''} ${t('vsPrev')}</div></div>
+    <div class="tile"><div class="l">${t('badgesTile')}</div>
       <div class="v badges">${Object.entries(badgeCounts).map(([c, n]) =>
-        `<span title="${BADGE_NAME[c]}">${BADGE[c]}${n > 1 ? '×' + n : ''}</span>`).join('') || '–'}</div>
-      <div class="s">earned over ${p.scores.length} quarters</div></div>
-    <div class="tile"><div class="l">Peer tutoring</div>
+        `<span title="${esc(badgeName(c))}">${BADGE[c]}${n > 1 ? '×' + n : ''}</span>`).join('') || '–'}</div>
+      <div class="s">${t('earnedOver', p.scores.length)}</div></div>
+    <div class="tile"><div class="l">${t('peerTutoring')}</div>
       <div class="v">${p.times_tutor}🤝${p.times_tutee.length}</div>
-      <div class="s">times tutor · times helped</div></div>
+      <div class="s">${t('tutorHelped')}</div></div>
   </div>
-  <h2>Score history <span class="muted" style="font-size:12px;font-weight:400">0-1000: level + improvement + consistency</span></h2>
+  <h2>${t('scoreHistory')} <span class="muted" style="font-size:12px;font-weight:400">${t('scoreHistorySub')}</span></h2>
   <div class="card">${scoreChart(p.scores)}</div>
-  ${p.flags.length ? `<h2>Flagged for ${esc(p.period.target_label)}</h2>
-  <div class="card"><table><tr><th>Subject</th><th>Forecast</th><th>Risk</th><th>Why</th></tr>
-    ${p.flags.map(f => `<tr><td>${esc(f.subject)} <span class="muted">· ${esc(f.subject_hy)}</span></td>
+  ${p.flags.length ? `<h2>${esc(t('flaggedForHeading', target))}</h2>
+  <div class="card"><table><tr><th>${t('thSubject')}</th><th>${t('thForecast')}</th>
+    <th>${t('thRisk')}</th><th>${t('thWhy')}</th></tr>
+    ${p.flags.map(f => `<tr><td>${subjHtml(f.subject, f.subject_hy)}</td>
       <td>${fmt(f.predicted, 1)}</td><td>${riskChip(f.risk)}</td>
-      <td class="flag-reason">${esc(f.reason)}</td></tr>`).join('')}</table></div>` : ''}
-  ${p.tracks ? `<h2>University tracks <span class="muted" style="font-size:12px;font-weight:400">from this year's subject strengths</span></h2>
-  <div class="card">${p.tracks.map(t => `
-    <div class="bar-row"><div class="lbl">${esc(t.track)}</div>
-      <div class="bar-track"><div class="bar-fill" style="width:${(t.readiness*100).toFixed(0)}%"></div></div>
-      <div class="n">${fmt(t.avg, 1)}</div></div>`).join('')}
-    <div class="note">Readiness relative to the 10-point scale; a guide for the student's own choice, not a gate.</div></div>` : ''}
-  <h2>Subjects · quarter averages since ${p.scores.length ? p.scores[0].y : ''}</h2>
+      <td class="flag-reason">${esc(reasonText(f.reason))}</td></tr>`).join('')}</table></div>` : ''}
+  ${p.tracks ? `<h2>${t('uniTracks')} <span class="muted" style="font-size:12px;font-weight:400">${t('uniTracksSub')}</span></h2>
+  <div class="card">${p.tracks.map(tr => `
+    <div class="bar-row wide"><div class="lbl">${esc((T[lang].track || T.en.track)[tr.track] || tr.track)}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${(tr.readiness*100).toFixed(0)}%"></div></div>
+      <div class="n">${fmt(tr.avg, 1)}</div></div>`).join('')}
+    <div class="note">${t('uniTracksNote')}</div></div>` : ''}
+  <h2>${esc(t('subjectsSince', p.scores.length ? p.scores[0].y : ''))}</h2>
   <div class="spark-grid">${p.subjects.map(s => {
     const flagged = flaggedSubjects.has(s.subject);
     const last = s.points[s.points.length - 1];
     return `<div class="spark-card${flagged ? ' flagged' : ''}">
       <div style="display:flex;justify-content:space-between;align-items:baseline">
-        <div class="t">${esc(s.subject)} <span class="hy">· ${esc(s.subject_hy)}</span></div>
+        <div class="t">${subjHtml(s.subject, s.subject_hy)}</div>
         <div class="last">${fmt(last.avg, 1)}</div></div>
       ${sparkline(s.points, 220, 44, flagged)}</div>`;
   }).join('')}</div>
   <p style="margin-top:16px"><a class="plain" href="/api/students/${p.id}/transcript.json">
-  Download lifetime transcript (JSON)</a> <span class="muted">· the full record, owned by the student</span></p>`;
+  ${t('downloadTranscript')}</a> <span class="muted">${t('transcriptNote')}</span></p>`;
 }
 
 async function vTeachers() {
   const d = await api('/teachers');
-  const maxAbs = Math.max(...d.teachers.map(t => Math.abs(t.value_added)), 0.01);
-  view.innerHTML = `<h2>Teacher value-added</h2>
+  const maxAbs = Math.max(...d.teachers.map(x => Math.abs(x.value_added)), 0.01);
+  view.innerHTML = `<h2>${t('teacherVA')}</h2>
   <div class="card">
-  <table><tr><th>Teacher</th><th>Subject</th><th>Value-added</th><th></th><th>Student-years</th></tr>
-  ${d.teachers.map(t => {
-    const w = Math.abs(t.value_added) / maxAbs * 50;
-    const pos = t.value_added >= 0;
-    return `<tr><td>${esc(t.name)}</td>
-      <td>${esc(t.subject)} <span class="muted">· ${esc(t.subject_hy)}</span></td>
-      <td class="${pos ? 'up' : 'down'}">${pos ? '+' : ''}${fmt(t.value_added, 2)}</td>
+  <table><tr><th>${t('thTeacher')}</th><th>${t('thSubject')}</th>
+  <th>${t('thValueAdded')}</th><th></th><th>${t('thStudentYears')}</th></tr>
+  ${d.teachers.map(x => {
+    const w = Math.abs(x.value_added) / maxAbs * 50;
+    const pos = x.value_added >= 0;
+    return `<tr><td>${esc(x.name)}</td>
+      <td>${subjHtml(x.subject, x.subject_hy)}</td>
+      <td class="${pos ? 'up' : 'down'}">${pos ? '+' : ''}${fmt(x.value_added, 2)}</td>
       <td><div class="va-axis"><div class="mid"></div>
         <div class="f" style="${pos
           ? `left:50%;width:${w}%;background:var(--s1)`
           : `right:50%;width:${w}%;background:var(--status-crit)`}"></div></div></td>
-      <td>${t.n_student_years}</td></tr>`;
+      <td>${x.n_student_years}</td></tr>`;
   }).join('')}</table>
-  <div class="note">Growth of the teacher's students (Q4 vs Q1) compared with school-wide growth for the
-  same subject and grade level. A teacher who inherits a weak class is not punished for it, and one who
-  inherits a strong class gets no free credit.</div></div>`;
+  <div class="note">${t('teacherNote')}</div></div>`;
 }
 
 function vAbout() {
+  if (lang === 'hy') {
+    view.innerHTML = `<div class="prose">
+    <h2>Ի՞նչ է Գիտակը</h2>
+    <p><b>Գիտակ</b> («գիտցողը») բաց կոդով հարթակ է, որի նպատակն է հայկական դպրոցը
+    աշխատեցնել փաստերի, ոչ թե ենթադրությունների վրա։ Բոլոր գնահատականները թվային են։
+    Յուրաքանչյուր աշակերտ ունի իր պատմությունը, որը դպրոցը տեսնում և օգտագործում է.
+    ոչ միայն դասարանի 10 ամենաուժեղները, այլ բոլոր 30-ը։</p>
+    <p>Տարվա ցիկլը. ամեն քառորդ ավարտվում է քննություններով → մոդելը վերապատրաստվում է
+    դպրոցի ամբողջ պատմության վրա → ամեն աշակերտ ստանում է կանխատեսում ամեն առարկայից →
+    դժվարացողները նշվում են՝ պատճառի բացատրությամբ → ուժեղ դասընկերները առաջարկվում են
+    որպես կրկնուսույցներ → հաջորդ քառորդը ցույց է տալիս՝ ստացվե՞ց։ Միավորները,
+    կրծքանշաններն ու վարկանիշները առաջընթացը դարձնում են խաղի պես մոտիվացնող. միավորը
+    գնահատում է առաջընթացն ու կայունությունը, ոչ միայն մակարդակը, այնպես որ բարձրացող
+    աշակերտը նույնքան տեսանելի է, որքան գերազանցիկը։</p>
+    <h2>Կանոններ, որոնց այս նախագիծը հետևում է</h2>
+    <ul>
+      <li><b>Կոդը բաց է։ Երեխաների տվյալները՝ երբեք։</b> Այս դեմոն ամբողջությամբ սինթետիկ
+      դպրոց է. իրական դպրոցում բազան մնում է դպրոցի ներսում։</li>
+      <li><b>Մոդելը խորհուրդ է տալիս, որոշում է ուսուցիչը։</b> Նշումը երեխային օգնելու
+      առիթ է, երբեք՝ պիտակ։ Կանխատեսումից ավտոմատ հետևանքներ չեն լինում։</li>
+      <li><b>Վկայագիրը պատկանում է աշակերտին։</b> Ամբողջական պատմությունը ցանկացած պահի
+      արտահանելի է, և թե ինչով կիսվել հետագայում՝ իր ընտրությունն է։</li>
+      <li><b>Ազնվություն ճշգրտության մասին։</b> Մոդելի ամեն գործարկում պահպանում է իր
+      սխալը կանխատեսումների կողքին։</li>
+    </ul>
+    <p lang="en">Gitak is an open-source platform for Armenian schools: every grade digital,
+    every student a story, and the teacher knows before each quarter who needs support in
+    which subject. The code is public; children's data never is.</p>
+    </div>`;
+    return;
+  }
   view.innerHTML = `<div class="prose">
   <h2>What Gitak is</h2>
   <p><b>Գիտակ</b> (Gitak, "the one who knows") is an open-source platform for making an Armenian school
@@ -454,19 +707,31 @@ function vAbout() {
   </ul>
   <p lang="hy">Գիտակը բաց հարթակ է հայկական դպրոցների համար. բոլոր գնահատականները թվային են,
   յուրաքանչյուր աշակերտ ունի իր պատմությունը, և ուսուցիչը ամեն քառորդից առաջ գիտի, թե ով որ առարկայում
-  աջակցության կարիք ունի: Կոդը բաց է, երեխաների տվյալները՝ երբեք:</p>
+  աջակցության կարիք ունի։ Կոդը բաց է, երեխաների տվյալները՝ երբեք։</p>
   </div>`;
 }
 
-/* ---------------- router ---------------- */
+/* ---------------- chrome + router ---------------- */
+function renderChrome() {
+  document.documentElement.lang = lang;
+  document.getElementById('tagline').textContent = t('tagline');
+  document.getElementById('nav').innerHTML = `
+    <a href="#overview">${t('navOverview')}</a><a href="#classes">${t('navClasses')}</a>
+    <a href="#students">${t('navStudents')}</a><a href="#teachers">${t('navTeachers')}</a>
+    <a href="#about">${t('navAbout')}</a>`;
+  document.querySelectorAll('#lang button').forEach(b =>
+    b.classList.toggle('on', b.dataset.l === lang));
+}
+
 async function route() {
   const h = location.hash || '#overview';
   document.querySelectorAll('#nav a').forEach(a =>
-    a.classList.toggle('on', h.startsWith(a.getAttribute('href').split('/')[0]) &&
-      (a.getAttribute('href') === h || h.startsWith(a.getAttribute('href')) ||
-       (a.getAttribute('href') === '#classes' && h.startsWith('#class/')) ||
-       (a.getAttribute('href') === '#students' && h.startsWith('#student/')))));
-  view.innerHTML = '<div class="loading">Loading…</div>';
+    a.classList.toggle('on',
+      a.getAttribute('href') === h ||
+      (a.getAttribute('href') === '#classes' && h.startsWith('#class/')) ||
+      (a.getAttribute('href') === '#students' && h.startsWith('#student/')) ||
+      (a.getAttribute('href') === '#overview' && (h === '' || h === '#overview'))));
+  view.innerHTML = `<div class="loading">${t('loading')}</div>`;
   try {
     if (h.startsWith('#class/')) await vClass(h.split('/')[1]);
     else if (h.startsWith('#student/')) await vStudent(h.split('/')[1]);
@@ -476,15 +741,22 @@ async function route() {
     else if (h === '#about') vAbout();
     else await vOverview();
   } catch (e) {
-    view.innerHTML = `<div class="loading">Could not load this view (${esc(e.message)}).</div>`;
+    view.innerHTML = `<div class="loading">${t('loadError', esc(e.message))}</div>`;
   }
 }
-addEventListener('hashchange', route);
-route();
-api('/overview').then(o => {
-  if (!o.empty) document.getElementById('period').textContent =
-    `history through ${o.period.latest_label} · planning ${o.period.target_label}`;
+
+document.getElementById('lang').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-l]');
+  if (!b || b.dataset.l === lang) return;
+  lang = b.dataset.l;
+  localStorage.setItem('gitak-lang', lang);
+  renderChrome();
+  route();
 });
+
+addEventListener('hashchange', route);
+renderChrome();
+route();
 document.addEventListener('click', (e) => {
   const row = e.target.closest('[data-go]');
   if (row) location.hash = row.dataset.go;

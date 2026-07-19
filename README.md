@@ -4,7 +4,7 @@
 
 Gitak turns a school's own exam results into decisions: who needs help next quarter, in which subject, which strong classmate could tutor them, which teachers are actually lifting their students, and which children need an intensive support program before the year slips away.
 
-![Gitak dashboard: school overview with forecasts, tutoring evidence and support lists](docs/dashboard-overview.png)
+![Gitak dashboard in Armenian: school overview with forecasts, tutoring evidence and support lists; the UI switches between English and Armenian](docs/dashboard-overview.png)
 
 ## Why
 
@@ -22,7 +22,7 @@ The project is built for the Armenian school reality: a 10-point grading scale, 
 - **Support-program list.** Students ending the year below 6 in three or more subjects surface automatically as candidates for intensive support.
 - **University tracks (grades 9-12).** Subject strengths grouped into STEM, Humanities, Languages and Arts, as a guide for the student's own choice.
 - **Lifetime transcript.** One JSON export per student with every exam, score, badge and flag across all 12 years. The record belongs to the student.
-- **Web dashboard.** School overview, class leaderboards, student profiles with per-subject sparklines, teacher table. English UI with Armenian subject names, light and dark mode, zero frontend dependencies.
+- **Web dashboard.** School overview, class leaderboards, student profiles with per-subject sparklines, teacher table. Fully bilingual UI with an EN | ՀԱՅ toggle (Armenian mode localizes everything down to class letters, 8B becomes 8Բ, and the model's flag reasons); light and dark mode, zero frontend dependencies. `?lang=hy` in the URL works too.
 
 ## Quickstart
 
@@ -117,7 +117,6 @@ tests/          pytest end-to-end suite
 ## Roadmap
 
 - E-journal API connectors (beyond CSV)
-- Armenian-language UI toggle
 - Attendance as a model feature
 - Accounts and roles (teacher, director, student, parent) for real deployments
 - Alignment with Ministry of Education assessment standards
