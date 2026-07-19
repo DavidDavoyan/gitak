@@ -50,11 +50,17 @@ def test_active_backend_is_correct():
 
 @pytest.mark.skipif(not fastmath.USING_C,
                     reason="C extension not built; pure-Python fallback in use")
-def test_c_matches_python_exactly():
+def test_c_matches_python():
     rng = random.Random(0)
     groups = [[rng.uniform(1, 10) for _ in range(rng.randint(0, 20))]
               for _ in range(500)]
     py = fastmath._py_mean_std(groups)
     c = fastmath.mean_std(groups)
-    # identical arithmetic, so results must be bit-for-bit equal
-    assert c == py
+    # Same formula, but not necessarily the same last bit: a compiler may fuse
+    # `var += d*d` into a single rounded multiply-add (observed on clang/ARM),
+    # so results agree to floating-point tolerance rather than exactly. Gitak
+    # rounds scores to ints and averages to 2 decimals, so this never shows.
+    assert len(c) == len(py)
+    for (cm, cs), (pm, ps) in zip(c, py):
+        assert cm == pytest.approx(pm, rel=1e-12, abs=1e-12)
+        assert cs == pytest.approx(ps, rel=1e-12, abs=1e-12)

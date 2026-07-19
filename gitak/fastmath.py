@@ -7,8 +7,11 @@ without changing results.
 
 If the C extension ``gitak._speedups`` has been built (see docs/PERFORMANCE.md)
 it is used automatically; otherwise these pure-Python implementations run.
-The two paths are byte-for-byte equivalent and tests assert it, so behaviour
-never depends on whether the extension is present.
+The two paths are numerically equivalent (identical up to floating-point
+rounding; a compiler that fuses multiply-add can differ in the last bit) and
+tests assert it, so behaviour never depends on whether the extension is
+present. Gitak rounds scores to integers and averages to two decimals, so a
+last-bit difference is never observable in any output.
 """
 
 

@@ -35,7 +35,7 @@ mean and standard deviation across subjects, used by the scoring engine —
 there is an optional C extension built with the CPython C API.
 
 - It is **optional**. With no C compiler, `pip install` skips it and the pure-Python fallback in [`gitak/fastmath.py`](../gitak/fastmath.py) runs. The public demo therefore works everywhere with no toolchain.
-- The two paths are **byte-for-byte equivalent**; `tests/test_fastmath.py` asserts it whenever the extension is present.
+- The two paths are **numerically equivalent** — identical up to floating-point rounding. (A last-bit difference can occur because some compilers fuse `var += d*d` into a single rounded multiply-add; CI caught exactly this on clang/ARM. It never changes Gitak's rounded outputs.) `tests/test_fastmath.py` asserts the two agree to tolerance whenever the extension is present.
 
 Build it:
 
