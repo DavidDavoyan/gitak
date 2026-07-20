@@ -7,139 +7,263 @@
 <style>
   :root {
     color-scheme: light;
-    --page: #f9f9f7; --surface: #fcfcfb;
+    --page: #f3f3f0; --surface: #fcfcfb; --sidebar: #fcfcfb;
     --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
-    --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,.10);
+    --grid: #e7e6e0; --axis: #c3c2b7; --border: rgba(11,11,11,.08);
     --s1: #2a78d6; --s1-soft: #9ec5f4; --s1-softer: #cde2fb;
+    --s2: #008300; --s3: #e87ba4; --s4: #eda100; --s5: #1baf7a;
+    --s6: #eb6834; --s7: #4a3aa7; --s8: #e34948;
     --good-text: #006300; --status-good: #0ca30c; --status-warn: #fab219;
     --status-serious: #ec835a; --status-crit: #d03b3b;
-    --neutral-mid: #f0efec;
+    --neutral-mid: #efeeea;
+    --accent-soft: rgba(42, 120, 214, .10);
+    --shadow: 0 1px 2px rgba(11,11,11,.04), 0 10px 28px -14px rgba(11,11,11,.14);
+    --shadow-lg: 0 2px 6px rgba(11,11,11,.05), 0 24px 48px -20px rgba(11,11,11,.22);
+    --radius: 14px;
   }
   @media (prefers-color-scheme: dark) {
     :root {
       color-scheme: dark;
-      --page: #0d0d0d; --surface: #1a1a19;
+      --page: #0d0d0d; --surface: #1a1a19; --sidebar: #161615;
       --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
-      --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,.10);
+      --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,.09);
       --s1: #3987e5; --s1-soft: #1c5cab; --s1-softer: #184f95;
-      --good-text: #0ca30c; --neutral-mid: #383835;
+      --s2: #008300; --s3: #d55181; --s4: #c98500; --s5: #199e70;
+      --s6: #d95926; --s7: #9085e9; --s8: #e66767;
+      --good-text: #0ca30c; --neutral-mid: #242422;
+      --accent-soft: rgba(57, 135, 229, .16);
+      --shadow: none; --shadow-lg: none;
     }
   }
   * { box-sizing: border-box; }
+  html, body { height: 100%; }
   body {
     margin: 0; background: var(--page); color: var(--ink);
-    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+    font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
   }
-  header {
-    display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
-    padding: 14px 22px; background: var(--surface);
+  svg.ic { width: 18px; height: 18px; flex: none; }
+
+  /* ---------- app shell: sidebar + topbar ---------- */
+  .app { display: flex; min-height: 100vh; }
+  .sidebar {
+    width: 236px; flex: none; background: var(--sidebar);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 6px;
+    position: sticky; top: 0; height: 100vh; padding: 18px 12px 14px;
+    z-index: 30;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; padding: 0 8px 14px; }
+  .brand .mark {
+    width: 36px; height: 36px; border-radius: 11px; flex: none;
+    background: linear-gradient(135deg, var(--s1), var(--s7));
+    color: #fff; font-size: 19px; font-weight: 800;
+    display: grid; place-items: center;
+  }
+  .brand .b-name { font-size: 16.5px; font-weight: 750; line-height: 1.15; }
+  .brand small { display: block; color: var(--muted); font-size: 10.5px; font-weight: 400; }
+  #nav { display: flex; flex-direction: column; gap: 2px; overflow-y: auto; }
+  #nav a {
+    display: flex; align-items: center; gap: 11px;
+    padding: 9px 11px; border-radius: 10px; text-decoration: none;
+    color: var(--ink-2); font-weight: 550; font-size: 13.5px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  #nav a svg { color: var(--muted); }
+  #nav a:hover { background: var(--neutral-mid); color: var(--ink); }
+  #nav a.on { background: var(--accent-soft); color: var(--s1); }
+  #nav a.on svg { color: var(--s1); }
+  .side-foot { margin-top: auto; border-top: 1px solid var(--border); padding-top: 10px; }
+  .user-card { display: flex; align-items: center; gap: 10px; padding: 6px 8px; }
+  .user-card .u-meta { min-width: 0; flex: 1; }
+  .user-card .u-name { font-size: 13px; font-weight: 600; white-space: nowrap;
+                       overflow: hidden; text-overflow: ellipsis; }
+  .user-card .u-role { font-size: 11.5px; color: var(--muted); }
+  .icon-btn {
+    border: 0; background: transparent; color: var(--muted); cursor: pointer;
+    width: 32px; height: 32px; border-radius: 9px;
+    display: grid; place-items: center; flex: none;
+  }
+  .icon-btn:hover { background: var(--neutral-mid); color: var(--ink); }
+
+  .shell { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .topbar {
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px 26px; background: var(--surface);
     border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 20;
   }
-  .logo { font-size: 19px; font-weight: 700; letter-spacing: .2px; }
-  .logo small { color: var(--muted); font-weight: 400; margin-left: 6px; }
-  .period { color: var(--ink-2); font-size: 12.5px; }
-  nav { display: flex; gap: 4px; margin-left: auto; flex-wrap: wrap; }
-  nav a {
-    padding: 6px 12px; border-radius: 8px; text-decoration: none;
-    color: var(--ink-2); font-weight: 500;
+  .menu-btn { display: none; }
+  .period { color: var(--ink-2); font-size: 12.5px; min-width: 0;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .top-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .topsearch { position: relative; }
+  .topsearch .ts-wrap { display: flex; align-items: center; gap: 8px;
+    background: var(--page); border: 1px solid var(--border); border-radius: 10px;
+    padding: 6px 11px; width: 230px; color: var(--muted); }
+  .topsearch input { border: 0; background: transparent; color: var(--ink);
+    font: inherit; font-size: 13px; width: 100%; outline: none; }
+  .topsearch .ts-wrap:focus-within { border-color: var(--s1); }
+  .ts-drop {
+    position: absolute; top: calc(100% + 6px); right: 0; width: 290px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; box-shadow: var(--shadow-lg); overflow: hidden;
+    max-height: 330px; overflow-y: auto; z-index: 40;
   }
-  nav a.on { background: var(--s1); color: #fff; }
-  nav a:not(.on):hover { background: var(--neutral-mid); }
-  .lang { display: flex; border: 1px solid var(--axis); border-radius: 8px; overflow: hidden; }
+  .ts-drop .ts-item { display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px; cursor: pointer; }
+  .ts-drop .ts-item:hover { background: var(--neutral-mid); }
+  .ts-drop .ts-empty { padding: 10px 12px; color: var(--muted); font-size: 12.5px; }
+  .lang { display: flex; border: 1px solid var(--border); border-radius: 9px;
+          overflow: hidden; background: var(--page); }
   .lang button {
-    border: 0; background: var(--surface); color: var(--ink-2);
-    font: inherit; font-size: 12px; font-weight: 600; padding: 5px 10px; cursor: pointer;
+    border: 0; background: transparent; color: var(--ink-2);
+    font: inherit; font-size: 11.5px; font-weight: 650; padding: 6px 10px; cursor: pointer;
   }
   .lang button.on { background: var(--s1); color: #fff; }
-  .user { display: flex; align-items: center; gap: 8px; font-size: 12.5px;
-          color: var(--ink-2); }
-  .btn.small { padding: 4px 10px; font-size: 12px; border-radius: 8px; }
-  .login-wrap { display: flex; justify-content: center; padding: 60px 0; }
-  .login-card { width: 320px; background: var(--surface); border: 1px solid var(--border);
-                border-radius: 14px; padding: 26px 24px; }
-  .login-card h2 { margin: 0 0 16px; font-size: 17px; }
-  .login-card input { width: 100%; margin-bottom: 10px; padding: 9px 12px;
-    border-radius: 10px; border: 1px solid var(--axis); background: var(--page);
-    color: var(--ink); font: inherit; }
-  .login-card .err { color: var(--status-crit); font-size: 12.5px; min-height: 18px;
-                     margin: 4px 0 8px; }
-  main { max-width: 1100px; margin: 0 auto; padding: 20px 22px 60px; }
-  h2 { font-size: 17px; margin: 26px 0 10px; }
-  h2:first-child { margin-top: 4px; }
-  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap: 10px; }
-  .tile {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 12px; padding: 12px 14px;
+
+  main { width: 100%; max-width: 1160px; margin: 0 auto; padding: 24px 26px 70px; }
+
+  /* login state hides the chrome */
+  body:not(.authed) .sidebar, body:not(.authed) .topbar { display: none; }
+  body:not(.authed) main { max-width: none; padding: 0; }
+
+  /* mobile */
+  .backdrop { display: none; }
+  @media (max-width: 920px) {
+    .sidebar { position: fixed; left: 0; top: 0; bottom: 0;
+      transform: translateX(-105%); transition: transform .2s ease;
+      box-shadow: var(--shadow-lg); }
+    .sidebar.open { transform: none; }
+    .menu-btn { display: grid; }
+    .backdrop.show { display: block; position: fixed; inset: 0;
+      background: rgba(0,0,0,.42); z-index: 25; }
+    .topsearch .ts-wrap { width: 150px; }
+    main { padding: 18px 16px 60px; }
   }
-  .tile .v { font-size: 26px; font-weight: 700; margin: 2px 0; }
-  .tile .l { color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: .5px; }
-  .tile .s { color: var(--ink-2); font-size: 12px; }
-  .cards2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  @media (max-width: 800px) { .cards2 { grid-template-columns: 1fr; } }
+
+  /* ---------- typography & cards ---------- */
+  h2 { font-size: 16.5px; font-weight: 700; letter-spacing: -.1px; margin: 28px 0 12px; }
+  h2 .muted { font-weight: 400; }
+  h2:first-child { margin-top: 0; }
+  .page-head { display: flex; align-items: center; gap: 14px; margin: 2px 0 18px; }
+  .page-head h2 { margin: 0; font-size: 19px; }
+  .page-head .ph-sub { color: var(--muted); font-size: 12.5px; margin-top: 1px; }
   .card {
     background: var(--surface); border: 1px solid var(--border);
-    border-radius: 12px; padding: 14px 16px;
+    border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow);
   }
-  .card h3 { margin: 0 0 10px; font-size: 14px; }
-  .card .note { color: var(--muted); font-size: 12px; margin-top: 8px; }
+  .card h3 { margin: 0 0 12px; font-size: 13.5px; font-weight: 650; }
+  .card .note { color: var(--muted); font-size: 12px; margin-top: 10px; }
+  .cards2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 800px) { .cards2 { grid-template-columns: 1fr; } }
+
+  /* ---------- stat tiles ---------- */
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(182px,1fr)); gap: 12px; }
+  .tile {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px; box-shadow: var(--shadow);
+    display: flex; gap: 12px; align-items: flex-start;
+  }
+  .tile .t-ic { width: 38px; height: 38px; border-radius: 11px; flex: none;
+    background: var(--accent-soft); color: var(--s1);
+    display: grid; place-items: center; }
+  .tile .t-ic svg { width: 19px; height: 19px; }
+  .tile .t-body { min-width: 0; }
+  .tile .v { font-size: 23px; font-weight: 750; margin: 1px 0 2px; letter-spacing: -.3px; }
+  .tile .l { color: var(--muted); font-size: 10.5px; text-transform: uppercase;
+             letter-spacing: .6px; font-weight: 650; }
+  .tile .s { color: var(--ink-2); font-size: 12px; }
+
+  /* ---------- people ---------- */
+  .avatar {
+    width: 28px; height: 28px; border-radius: 50%; flex: none;
+    display: inline-grid; place-items: center;
+    font-size: 10.5px; font-weight: 750; letter-spacing: .2px;
+  }
+  .avatar.lg { width: 44px; height: 44px; font-size: 15px; border-radius: 14px; }
+  .person { display: inline-flex; align-items: center; gap: 9px; min-width: 0; }
+  .person .p-name { font-weight: 550; }
+
+  /* ---------- tables ---------- */
   table { width: 100%; border-collapse: collapse; }
-  th { text-align: left; color: var(--muted); font-size: 11.5px;
-       text-transform: uppercase; letter-spacing: .4px; font-weight: 600;
-       padding: 4px 8px; border-bottom: 1px solid var(--grid); }
-  td { padding: 6px 8px; border-bottom: 1px solid var(--grid);
+  th { text-align: left; color: var(--muted); font-size: 10.5px;
+       text-transform: uppercase; letter-spacing: .5px; font-weight: 650;
+       padding: 6px 10px; border-bottom: 1px solid var(--grid); }
+  td { padding: 7px 10px; border-bottom: 1px solid var(--grid);
        font-variant-numeric: tabular-nums; }
   tr:last-child td { border-bottom: 0; }
   tr.click { cursor: pointer; }
   tr.click:hover td { background: var(--neutral-mid); }
   .up { color: var(--good-text); font-weight: 600; }
   .down { color: var(--status-crit); font-weight: 600; }
-  .chip { display: inline-block; padding: 1px 8px; border-radius: 99px;
-          font-size: 11.5px; font-weight: 600; }
+  .chip { display: inline-block; padding: 2px 9px; border-radius: 99px;
+          font-size: 11px; font-weight: 650; white-space: nowrap; }
   .chip.high { background: var(--status-crit); color: #fff; }
   .chip.medium { background: var(--status-warn); color: #422e00; }
-  .bar-row { display: grid; grid-template-columns: 52px 1fr 34px; gap: 8px;
-             align-items: center; padding: 3px 0; }
+  .rank-medal { font-weight: 750; }
+
+  /* ---------- bars ---------- */
+  .bar-row { display: grid; grid-template-columns: 52px 1fr 34px; gap: 10px;
+             align-items: center; padding: 4px 0; }
   .bar-row.wide { grid-template-columns: 190px 1fr 34px; }
   .bar-row .lbl { color: var(--ink-2); font-size: 12.5px; white-space: nowrap;
                   overflow: hidden; text-overflow: ellipsis; }
   .bar-row .n { text-align: right; font-variant-numeric: tabular-nums; font-size: 12.5px; }
-  .bar-track { height: 10px; border-radius: 4px; background: transparent; }
-  .bar-fill { height: 10px; border-radius: 4px; background: var(--s1); min-width: 2px; }
-  .grid-classes { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px,1fr)); gap: 10px; }
+  .bar-track { height: 9px; border-radius: 5px; background: var(--neutral-mid); }
+  .bar-fill { height: 9px; border-radius: 5px; min-width: 3px;
+    background: linear-gradient(90deg, var(--s1), color-mix(in srgb, var(--s1) 70%, var(--s7))); }
+
+  /* ---------- class cards ---------- */
+  .grid-classes { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px,1fr)); gap: 12px; }
   .cls {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
-    padding: 12px 14px; cursor: pointer;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 14px 15px; cursor: pointer; box-shadow: var(--shadow);
+    transition: transform .12s ease, border-color .12s ease;
   }
-  .cls:hover { border-color: var(--s1); }
-  .cls .t { font-size: 18px; font-weight: 700; }
-  .cls .m { color: var(--ink-2); font-size: 12px; margin-top: 2px; }
+  .cls:hover { border-color: var(--s1); transform: translateY(-2px); }
+  .cls .t { font-size: 19px; font-weight: 750; letter-spacing: -.2px; }
+  .cls .m { color: var(--ink-2); font-size: 12px; margin-top: 3px; }
+  .cls .m.warn { color: var(--status-crit); font-weight: 550; }
+
+  /* ---------- controls ---------- */
   .search { display: flex; gap: 8px; margin-bottom: 14px; }
   .search input {
-    flex: 1; max-width: 420px; padding: 9px 12px; border-radius: 10px;
-    border: 1px solid var(--axis); background: var(--surface); color: var(--ink);
+    flex: 1; max-width: 420px; padding: 10px 13px; border-radius: 11px;
+    border: 1px solid var(--border); background: var(--surface); color: var(--ink);
     font: inherit;
   }
+  .search input:focus { outline: none; border-color: var(--s1); }
   .btn {
-    padding: 8px 14px; border-radius: 10px; border: 1px solid var(--axis);
-    background: var(--surface); color: var(--ink); font: inherit; cursor: pointer;
+    padding: 8px 15px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--ink); font: inherit; font-weight: 550;
+    cursor: pointer;
   }
+  .btn:hover { border-color: var(--axis); }
   .btn.primary { background: var(--s1); border-color: var(--s1); color: #fff; }
+  .btn.primary:hover { filter: brightness(1.07); }
+  .btn.small { padding: 4px 10px; font-size: 12px; border-radius: 8px; }
   a.plain { color: var(--s1); text-decoration: none; }
   a.plain:hover { text-decoration: underline; }
-  .back { display: inline-block; margin-bottom: 12px; }
+  .back { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 14px;
+          font-size: 12.5px; font-weight: 550; }
   .badges span { margin-right: 4px; }
-  .spark-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px,1fr)); gap: 10px; }
+
+  /* ---------- sparklines ---------- */
+  .spark-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(245px,1fr)); gap: 12px; }
   .spark-card { background: var(--surface); border: 1px solid var(--border);
-                border-radius: 12px; padding: 10px 12px; }
+                border-radius: var(--radius); padding: 12px 13px; box-shadow: var(--shadow); }
   .spark-card .t { font-size: 12.5px; color: var(--ink-2); }
   .spark-card .hy { color: var(--muted); }
-  .spark-card .last { font-weight: 700; font-size: 16px; }
-  .spark-card.flagged { border-color: var(--status-crit); }
+  .spark-card .last { font-weight: 750; font-size: 16px; }
+  .spark-card.flagged { border-color: color-mix(in srgb, var(--status-crit) 55%, transparent); }
+  .spark-card.flagged .last { color: var(--status-crit); }
   svg text { font: 11px system-ui, -apple-system, "Segoe UI", sans-serif; fill: var(--muted); }
+
+  /* ---------- misc ---------- */
   #tip {
-    position: fixed; pointer-events: none; display: none; z-index: 10;
-    background: var(--ink); color: var(--page); padding: 5px 9px;
-    border-radius: 8px; font-size: 12px; max-width: 260px;
+    position: fixed; pointer-events: none; display: none; z-index: 50;
+    background: var(--ink); color: var(--page); padding: 6px 10px;
+    border-radius: 9px; font-size: 12px; max-width: 260px; box-shadow: var(--shadow-lg);
   }
   .muted { color: var(--muted); }
   .flag-reason { color: var(--ink-2); font-size: 12px; }
@@ -148,23 +272,65 @@
   .prose strong { color: var(--ink); }
   .loading { color: var(--muted); padding: 30px 0; }
   .va-cell { display: flex; align-items: center; gap: 6px; }
-  .va-axis { position: relative; width: 140px; height: 10px; }
+  .va-axis { position: relative; width: 140px; height: 9px; }
   .va-axis .mid { position: absolute; left: 50%; top: -2px; bottom: -2px;
                   width: 1px; background: var(--axis); }
-  .va-axis .f { position: absolute; top: 0; height: 10px; border-radius: 4px; }
+  .va-axis .f { position: absolute; top: 0; height: 9px; border-radius: 5px; }
+
+  /* ---------- skeleton loading ---------- */
+  @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+  .skel { border-radius: var(--radius); animation: shimmer 1.3s linear infinite;
+    background: linear-gradient(90deg, var(--neutral-mid) 25%, var(--surface) 50%, var(--neutral-mid) 75%);
+    background-size: 200% 100%; }
+  .skel-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(182px,1fr));
+                gap: 12px; margin-bottom: 24px; }
+
+  /* ---------- login ---------- */
+  .login-page { min-height: 100vh; display: grid; place-items: center; padding: 24px;
+    background: radial-gradient(1200px 600px at 20% -10%, var(--accent-soft), transparent 60%), var(--page); }
+  .login-card { width: 350px; background: var(--surface); border: 1px solid var(--border);
+                border-radius: 18px; padding: 30px 28px; box-shadow: var(--shadow-lg); }
+  .login-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+  .login-brand .mark { width: 44px; height: 44px; border-radius: 13px;
+    background: linear-gradient(135deg, var(--s1), var(--s7)); color: #fff;
+    font-size: 23px; font-weight: 800; display: grid; place-items: center; }
+  .login-brand .b-name { font-size: 19px; font-weight: 750; }
+  .login-brand small { display: block; color: var(--muted); font-size: 11.5px; font-weight: 400; }
+  .login-card label { display: block; color: var(--muted); font-size: 11px;
+    text-transform: uppercase; letter-spacing: .5px; font-weight: 650; margin: 0 0 5px 2px; }
+  .login-card input { width: 100%; margin-bottom: 13px; padding: 10px 13px;
+    border-radius: 11px; border: 1px solid var(--border); background: var(--page);
+    color: var(--ink); font: inherit; }
+  .login-card input:focus { outline: none; border-color: var(--s1); }
+  .login-card .err { color: var(--status-crit); font-size: 12.5px; min-height: 18px;
+                     margin: 0 0 8px; }
 </style>
 </head>
 <body>
-<header>
-  <div class="logo">Գիտակ<small id="tagline"></small></div>
-  <div class="period" id="period"></div>
-  <nav id="nav"></nav>
-  <div class="lang" id="lang">
-    <button data-l="en">EN</button><button data-l="hy">ՀԱՅ</button>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="mark">Գ</div>
+      <div class="b-name">Gitak<small id="tagline"></small></div>
+    </div>
+    <nav id="nav"></nav>
+    <div class="side-foot" id="userbox"></div>
+  </aside>
+  <div class="shell">
+    <header class="topbar">
+      <button class="icon-btn menu-btn" id="menuBtn" aria-label="menu"></button>
+      <div class="period" id="period"></div>
+      <div class="top-actions">
+        <div class="topsearch" id="topsearch"></div>
+        <div class="lang" id="lang">
+          <button data-l="en">EN</button><button data-l="hy">ՀԱՅ</button>
+        </div>
+      </div>
+    </header>
+    <main id="view"><div class="loading">…</div></main>
   </div>
-  <div class="user" id="userbox"></div>
-</header>
-<main id="view"><div class="loading">…</div></main>
+</div>
+<div class="backdrop" id="backdrop"></div>
 <div id="tip"></div>
 <script>
 /* ---------------- language ---------------- */
@@ -411,6 +577,55 @@ const riskChip = (r) => r === 'high'
   ? `<span class="chip high">${t('riskHigh')}</span>`
   : `<span class="chip medium">${t('riskMedium')}</span>`;
 
+/* ---------------- icons (inline, stroke = currentColor) ---------------- */
+const ICONS = {
+  overview: '<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
+  classes: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  student: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  teachers: '<circle cx="12" cy="8" r="6"/><path d="M15.5 13 17 22l-5-3-5 3 1.5-9"/>',
+  about: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+  home: '<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/>',
+  search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+  logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
+  menu: '<path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/>',
+  trend: '<path d="m22 7-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/>',
+  flag: '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/>',
+  target: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+  calendar: '<path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m9 14 2 2 4-4"/>',
+  star: '<path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21 7 14.2 2 9.3l6.9-1z"/>',
+  award: '<circle cx="12" cy="8" r="6"/><path d="M15.5 13 17 22l-5-3-5 3 1.5-9"/>',
+};
+const icon = (k) => `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[k] || ''}</svg>`;
+
+/* ---------------- people ---------------- */
+const AV_COLORS = ['--s1','--s2','--s3','--s4','--s5','--s6','--s7','--s8'];
+function avatar(name, lg=false) {
+  let h = 0;
+  for (const ch of String(name)) h = (h * 31 + ch.codePointAt(0)) >>> 0;
+  const c = `var(${AV_COLORS[h % 8]})`;
+  const initials = String(name).split(/\s+/).slice(0, 2).map(w => w[0] || '').join('').toUpperCase();
+  return `<span class="avatar${lg ? ' lg' : ''}" style="background:color-mix(in srgb, ${c} 16%, transparent); color:${c}">${esc(initials)}</span>`;
+}
+const person = (name) => `<span class="person">${avatar(name)}<span class="p-name">${esc(name)}</span></span>`;
+
+function tile(ic, label, value, sub) {
+  return `<div class="tile"><div class="t-ic">${icon(ic)}</div><div class="t-body">
+    <div class="l">${label}</div><div class="v">${value}</div><div class="s">${sub}</div>
+  </div></div>`;
+}
+
+const RANK_MEDAL = { 1: '🥇', 2: '🥈', 3: '🥉' };
+const rankCell = (r) => r == null ? '–'
+  : RANK_MEDAL[r] ? `<span class="rank-medal">${RANK_MEDAL[r]}</span>` : r;
+
+function skeleton() {
+  return `<div class="skel-tiles">${'<div class="skel" style="height:76px"></div>'.repeat(4)}</div>
+    <div class="skel" style="height:130px;margin-bottom:14px"></div>
+    <div class="cards2"><div class="skel" style="height:230px"></div>
+    <div class="skel" style="height:230px"></div></div>`;
+}
+
 function showTip(html, ev) {
   tip.innerHTML = html; tip.style.display = 'block';
   const x = Math.min(ev.clientX + 14, innerWidth - 280);
@@ -527,21 +742,19 @@ async function vOverview() {
   const latestYear = `${o.period.latest_year}-${String(o.period.latest_year + 1).slice(2)}`;
   view.innerHTML = `
   <div class="tiles">
-    <div class="tile"><div class="l">${t('activeStudents')}</div><div class="v">${o.n_students_active}</div>
-      <div class="s">${t('classesTeachers', o.n_classes, o.n_teachers)}</div></div>
-    <div class="tile"><div class="l">${t('schoolAverage')}</div><div class="v">${fmt(o.school_avg)}</div>
-      <div class="s">${deltaHtml(o.school_avg_delta)} ${t('vsPrevQuarter')}</div></div>
-    <div class="tile"><div class="l">${esc(t('flaggedFor', target))}</div>
-      <div class="v">${o.flagged_students}</div>
-      <div class="s">${t('flagsSub', o.flags_total, o.flags_high)}</div></div>
-    <div class="tile"><div class="l">${t('tutoringPairs')}</div><div class="v">${o.pairings_target}</div>
-      <div class="s">${t('tutoringPairsSub')}</div></div>
-    <div class="tile"><div class="l">${t('modelAccuracy')}</div>
-      <div class="v">${o.model && o.model.mae != null ? '±' + fmt(o.model.mae) : '–'}</div>
-      <div class="s">${t('modelAccuracySub')}</div></div>
-    ${o.attendance_rate != null ? `
-    <div class="tile"><div class="l">${t('attendance')}</div><div class="v">${fmt(o.attendance_rate, 1)}%</div>
-      <div class="s">${t('attendanceSub', o.chronic_absence)}</div></div>` : ''}
+    ${tile('student', t('activeStudents'), o.n_students_active,
+           t('classesTeachers', o.n_classes, o.n_teachers))}
+    ${tile('trend', t('schoolAverage'), fmt(o.school_avg),
+           `${deltaHtml(o.school_avg_delta)} ${t('vsPrevQuarter')}`)}
+    ${tile('flag', esc(t('flaggedFor', target)), o.flagged_students,
+           t('flagsSub', o.flags_total, o.flags_high))}
+    ${tile('classes', t('tutoringPairs'), o.pairings_target, t('tutoringPairsSub'))}
+    ${tile('target', t('modelAccuracy'),
+           o.model && o.model.mae != null ? '±' + fmt(o.model.mae) : '–',
+           t('modelAccuracySub'))}
+    ${o.attendance_rate != null
+      ? tile('calendar', t('attendance'), fmt(o.attendance_rate, 1) + '%',
+             t('attendanceSub', o.chronic_absence)) : ''}
   </div>
   ${tu.paired_delta != null && tu.unpaired_delta != null ? `
   <h2>${t('tutoringWorks')}</h2>
@@ -560,14 +773,14 @@ async function vOverview() {
       <table><tr><th>${t('thStudent')}</th><th>${t('thClass')}</th>
       <th>${t('thWeakSubjects')}</th><th>${t('thWorstAvg')}</th></tr>
       ${o.support_candidates.map(s => `<tr class="click" data-go="#student/${s.student_id}">
-        <td>${esc(s.name)}</td><td>${esc(clsName(s.class))}</td>
+        <td>${person(s.name)}</td><td>${esc(clsName(s.class))}</td>
         <td>${s.weak_subjects}/${s.subjects_total}</td><td>${fmt(s.worst_avg)}</td></tr>`).join('')}
       </table></div>
     <div class="card"><h3>${t('mostImproved')}</h3>
       <table><tr><th>${t('thStudent')}</th><th>${t('thClass')}</th>
       <th>${t('thChange')}</th><th>${t('thAvg')}</th><th>${t('thScore')}</th></tr>
       ${o.top_improved.map(s => `<tr class="click" data-go="#student/${s.student_id}">
-        <td>${esc(s.name)}</td><td>${esc(clsName(s.class))}</td><td>${deltaHtml(s.delta)}</td>
+        <td>${person(s.name)}</td><td>${esc(clsName(s.class))}</td><td>${deltaHtml(s.delta)}</td>
         <td>${fmt(s.avg)}</td><td>${s.score}</td></tr>`).join('')}
       </table></div>
   </div>
@@ -610,7 +823,7 @@ async function vClass(id) {
       <table><tr><th>#</th><th>${t('thStudent')}</th><th>${t('thScore')}</th>
       <th>${t('thAvg')}</th><th>${t('thChange')}</th><th>${t('thBadges')}</th></tr>
       ${d.roster.map(r => `<tr class="click" data-go="#student/${r.id}">
-        <td>${r.rank_class ?? '–'}</td><td>${esc(r.first_name)} ${esc(r.last_name)}</td>
+        <td>${rankCell(r.rank_class)}</td><td>${person(r.first_name + ' ' + r.last_name)}</td>
         <td><b>${r.score ?? '–'}</b></td><td>${fmt(r.quarter_avg)}</td>
         <td>${deltaHtml(r.delta)}</td>
         <td class="badges">${r.badges.map(b => `<span title="${esc(badgeName(b))}">${BADGE[b]}</span>`).join('')}</td>
@@ -620,7 +833,7 @@ async function vClass(id) {
       ${d.flags.length ? `<table><tr><th>${t('thStudent')}</th><th>${t('thSubject')}</th>
         <th>${t('thForecast')}</th><th>${t('thRisk')}</th></tr>
         ${d.flags.map(f => `<tr class="click" data-go="#student/${f.student_id}">
-          <td>${esc(f.name)}</td><td>${subjHtml(f.subject, f.subject_hy)}</td>
+          <td>${person(f.name)}</td><td>${subjHtml(f.subject, f.subject_hy)}</td>
           <td>${fmt(f.predicted, 1)}</td><td>${riskChip(f.risk)}</td></tr>
           <tr><td colspan="4" class="flag-reason">${esc(reasonText(f.reason))}</td></tr>`).join('')}</table>`
         : `<div class="muted">${t('noClassFlags')}</div>`}</div>
@@ -650,7 +863,7 @@ async function vStudents() {
       const r = await api('/search?q=' + encodeURIComponent(q));
       box.innerHTML = r.results.length
         ? `<table><tr><th>${t('thStudent')}</th><th>${t('thClass')}</th></tr>` + r.results.map(s =>
-          `<tr class="click" data-go="#student/${s.id}"><td>${esc(s.name)}</td>
+          `<tr class="click" data-go="#student/${s.id}"><td>${person(s.name)}</td>
            <td>${esc(clsName(s.class))}</td></tr>`).join('') + '</table>'
         : t('searchNone');
     }, 200);
@@ -667,26 +880,25 @@ async function vStudent(id) {
   for (const b of p.badges) badgeCounts[b.code] = (badgeCounts[b.code] || 0) + 1;
   view.innerHTML = `
   <a class="plain back" href="javascript:history.back()">${t('back')}</a>
-  <h2 style="margin-top:0">${esc(p.name)}
-    <span class="muted" style="font-weight:400">· ${t('classWord').toLowerCase()}
+  <div class="page-head">${avatar(p.name, true)}
+    <div><h2>${esc(p.name)}</h2>
+    <div class="ph-sub">${t('classWord')}
     <a class="plain" href="#class/${p.class_id}">${esc(clsName(p.class))}</a> ·
-    ${p.status === 'graduated' ? t('graduated') : esc(t('gradeN', p.grade_level))}</span></h2>
+    ${p.status === 'graduated' ? t('graduated') : esc(t('gradeN', p.grade_level))}</div></div></div>
   <div class="tiles">
-    <div class="tile"><div class="l">${t('gitakScore')}</div><div class="v">${latest ? latest.score : '–'}</div>
-      <div class="s">${latest ? esc(t('rankInClass', latest.rank_class)) : ''}</div></div>
-    <div class="tile"><div class="l">${t('quarterAverage')}</div><div class="v">${latest ? fmt(latest.quarter_avg) : '–'}</div>
-      <div class="s">${latest ? deltaHtml(latest.delta) : ''} ${t('vsPrev')}</div></div>
-    <div class="tile"><div class="l">${t('badgesTile')}</div>
-      <div class="v badges">${Object.entries(badgeCounts).map(([c, n]) =>
-        `<span title="${esc(badgeName(c))}">${BADGE[c]}${n > 1 ? '×' + n : ''}</span>`).join('') || '–'}</div>
-      <div class="s">${t('earnedOver', p.scores.length)}</div></div>
-    <div class="tile"><div class="l">${t('peerTutoring')}</div>
-      <div class="v">${p.times_tutor}🤝${p.times_tutee.length}</div>
-      <div class="s">${t('tutorHelped')}</div></div>
-    ${p.attendance_latest && p.attendance_latest.rate != null ? `
-    <div class="tile"><div class="l">${t('attendance')}</div>
-      <div class="v">${fmt(p.attendance_latest.rate, 1)}%</div>
-      <div class="s">${t('attendanceLatest')}</div></div>` : ''}
+    ${tile('star', t('gitakScore'), latest ? latest.score : '–',
+           latest ? esc(t('rankInClass', latest.rank_class)) : '')}
+    ${tile('trend', t('quarterAverage'), latest ? fmt(latest.quarter_avg) : '–',
+           `${latest ? deltaHtml(latest.delta) : ''} ${t('vsPrev')}`)}
+    ${tile('award', t('badgesTile'),
+           `<span class="badges">${Object.entries(badgeCounts).map(([c, n]) =>
+             `<span title="${esc(badgeName(c))}">${BADGE[c]}${n > 1 ? '×' + n : ''}</span>`).join('') || '–'}</span>`,
+           t('earnedOver', p.scores.length))}
+    ${tile('classes', t('peerTutoring'), `${p.times_tutor}🤝${p.times_tutee.length}`,
+           t('tutorHelped'))}
+    ${p.attendance_latest && p.attendance_latest.rate != null
+      ? tile('calendar', t('attendance'), fmt(p.attendance_latest.rate, 1) + '%',
+             t('attendanceLatest')) : ''}
   </div>
   <h2>${t('scoreHistory')} <span class="muted" style="font-size:12px;font-weight:400">${t('scoreHistorySub')}</span></h2>
   <div class="card">${scoreChart(p.scores)}</div>
@@ -728,7 +940,7 @@ async function vTeachers() {
   ${d.teachers.map(x => {
     const w = Math.abs(x.value_added) / maxAbs * 50;
     const pos = x.value_added >= 0;
-    return `<tr><td>${esc(x.name)}</td>
+    return `<tr><td>${person(x.name)}</td>
       <td>${subjHtml(x.subject, x.subject_hy)}</td>
       <td class="${pos ? 'up' : 'down'}">${pos ? '+' : ''}${fmt(x.value_added, 2)}</td>
       <td><div class="va-axis"><div class="mid"></div>
@@ -802,38 +1014,47 @@ function vAbout() {
 let ME = null;   // null = sign-in needed; {open:true} = no accounts, demo mode
 const restrictedRole = () => ME && !ME.open && (ME.role === 'student' || ME.role === 'parent');
 
+const navItem = (href, ic, label) =>
+  `<a href="${href}">${icon(ic)}<span>${esc(label)}</span></a>`;
+
 function navHtml() {
   if (!ME) return '';
   if (restrictedRole()) {
     const kids = ME.students || [];
     let items = '';
     if (ME.role === 'student' && kids.length === 1) {
-      items += `<a href="#student/${kids[0].id}">${t('navMyPage')}</a>`;
-      if (kids[0].class_id) items += `<a href="#class/${kids[0].class_id}">${t('navMyClass')}</a>`;
+      items += navItem(`#student/${kids[0].id}`, 'student', t('navMyPage'));
+      if (kids[0].class_id) items += navItem(`#class/${kids[0].class_id}`, 'home', t('navMyClass'));
     } else {
       items += kids.map(k =>
-        `<a href="#student/${k.id}">${esc(k.name)}</a>
-         <a href="#class/${k.class_id}">${esc(clsName(k.class))}</a>`).join('');
+        navItem(`#student/${k.id}`, 'student', k.name) +
+        navItem(`#class/${k.class_id}`, 'home', clsName(k.class))).join('');
     }
-    return items + `<a href="#about">${t('navAbout')}</a>`;
+    return items + navItem('#about', 'about', t('navAbout'));
   }
-  return `
-    <a href="#overview">${t('navOverview')}</a><a href="#classes">${t('navClasses')}</a>
-    <a href="#students">${t('navStudents')}</a><a href="#teachers">${t('navTeachers')}</a>
-    <a href="#about">${t('navAbout')}</a>`;
+  return navItem('#overview', 'overview', t('navOverview'))
+       + navItem('#classes', 'classes', t('navClasses'))
+       + navItem('#students', 'student', t('navStudents'))
+       + navItem('#teachers', 'teachers', t('navTeachers'))
+       + navItem('#about', 'about', t('navAbout'));
 }
 
 function renderChrome() {
   document.documentElement.lang = lang;
+  document.body.classList.toggle('authed', !!ME);
   document.getElementById('tagline').textContent = t('tagline');
   document.getElementById('nav').innerHTML = navHtml();
+  document.getElementById('menuBtn').innerHTML = icon('menu');
   document.querySelectorAll('#lang button').forEach(b =>
     b.classList.toggle('on', b.dataset.l === lang));
+
   const box = document.getElementById('userbox');
   if (ME && !ME.open) {
     const roleName = (T[lang].roles || T.en.roles)[ME.role] || ME.role;
-    box.innerHTML = `<span>${esc(ME.name)} <span class="muted">· ${esc(roleName)}</span></span>
-      <button class="btn small" id="logout">${t('logout')}</button>`;
+    box.innerHTML = `<div class="user-card">${avatar(ME.name)}
+      <div class="u-meta"><div class="u-name">${esc(ME.name)}</div>
+      <div class="u-role">${esc(roleName)}</div></div>
+      <button class="icon-btn" id="logout" title="${esc(t('logout'))}">${icon('logout')}</button></div>`;
     document.getElementById('logout').onclick = async () => {
       await fetch('/api/auth/logout', { method: 'POST' });
       ME = null; renderChrome(); renderLogin();
@@ -841,13 +1062,58 @@ function renderChrome() {
   } else {
     box.innerHTML = '';
   }
+
+  const ts = document.getElementById('topsearch');
+  const canSearch = ME && (ME.open || ME.role === 'director' || ME.role === 'teacher');
+  if (canSearch) {
+    ts.innerHTML = `<div class="ts-wrap">${icon('search')}
+      <input id="ts-q" placeholder="${esc(t('searchPlaceholder'))}"></div>
+      <div class="ts-drop" id="ts-drop" style="display:none"></div>`;
+    const input = document.getElementById('ts-q');
+    const drop = document.getElementById('ts-drop');
+    let tsTimer;
+    input.oninput = () => {
+      clearTimeout(tsTimer);
+      tsTimer = setTimeout(async () => {
+        const q = input.value.trim();
+        if (q.length < 2) { drop.style.display = 'none'; return; }
+        const r = await api('/search?q=' + encodeURIComponent(q));
+        drop.innerHTML = r.results.length
+          ? r.results.map(s => `<div class="ts-item" data-go="#student/${s.id}">
+              ${avatar(s.name)}<span>${esc(s.name)}
+              <span class="muted">· ${esc(clsName(s.class))}</span></span></div>`).join('')
+          : `<div class="ts-empty">${t('searchNone')}</div>`;
+        drop.style.display = 'block';
+      }, 180);
+    };
+    input.addEventListener('keydown', e => { if (e.key === 'Escape') drop.style.display = 'none'; });
+    document.addEventListener('click', e => {
+      if (!ts.contains(e.target)) drop.style.display = 'none';
+    });
+  } else {
+    ts.innerHTML = '';
+  }
 }
 
+/* mobile sidebar */
+const sidebarEl = document.getElementById('sidebar');
+const backdropEl = document.getElementById('backdrop');
+function closeSidebar() { sidebarEl.classList.remove('open'); backdropEl.classList.remove('show'); }
+document.getElementById('menuBtn').onclick = () => {
+  sidebarEl.classList.add('open'); backdropEl.classList.add('show');
+};
+backdropEl.onclick = closeSidebar;
+document.getElementById('nav').addEventListener('click', closeSidebar);
+
 function renderLogin() {
-  view.innerHTML = `<div class="login-wrap"><div class="login-card">
-    <h2>${t('loginTitle')}</h2>
-    <input id="lg-u" placeholder="${esc(t('username'))}" autocomplete="username" autofocus>
-    <input id="lg-p" type="password" placeholder="${esc(t('password'))}" autocomplete="current-password">
+  document.body.classList.remove('authed');
+  view.innerHTML = `<div class="login-page"><div class="login-card">
+    <div class="login-brand"><div class="mark">Գ</div>
+      <div><div class="b-name">Gitak</div><small>${esc(t('tagline'))}</small></div></div>
+    <label for="lg-u">${esc(t('username'))}</label>
+    <input id="lg-u" autocomplete="username" autofocus>
+    <label for="lg-p">${esc(t('password'))}</label>
+    <input id="lg-p" type="password" autocomplete="current-password">
     <div class="err" id="lg-err"></div>
     <button class="btn primary" id="lg-go" style="width:100%">${t('signIn')}</button>
   </div></div>`;
@@ -890,7 +1156,9 @@ async function route() {
       (a.getAttribute('href') === '#classes' && h.startsWith('#class/')) ||
       (a.getAttribute('href') === '#students' && h.startsWith('#student/')) ||
       (a.getAttribute('href') === '#overview' && (h === '' || h === '#overview'))));
-  view.innerHTML = `<div class="loading">${t('loading')}</div>`;
+  const drop = document.getElementById('ts-drop');
+  if (drop) drop.style.display = 'none';
+  view.innerHTML = skeleton();
   try {
     if (h.startsWith('#class/')) await vClass(h.split('/')[1]);
     else if (h.startsWith('#student/')) await vStudent(h.split('/')[1]);
