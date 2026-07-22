@@ -6,40 +6,28 @@
 <title>Gitak · Գիտակ</title>
 <style>
   :root {
+    /* always-light theme, styled after the bright SaaS admin reference */
     color-scheme: light;
-    --page: #f3f3f0; --surface: #fcfcfb; --sidebar: #fcfcfb;
-    --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
-    --grid: #e7e6e0; --axis: #c3c2b7; --border: rgba(11,11,11,.08);
-    --s1: #2a78d6; --s1-soft: #9ec5f4; --s1-softer: #cde2fb;
-    --s2: #008300; --s3: #e87ba4; --s4: #eda100; --s5: #1baf7a;
+    --page: #f4f6f8; --surface: #ffffff; --sidebar: #fafbfc;
+    --ink: #17191c; --ink-2: #4b5563; --muted: #8a919b;
+    --grid: #edeff2; --axis: #d3d8de; --border: #e7eaee;
+    --s1: #2172d3; --s1-soft: #9dc4f0; --s1-softer: #d8e8fa;
+    --s2: #1e8e3e; --s3: #e87ba4; --s4: #eda100; --s5: #1baf7a;
     --s6: #eb6834; --s7: #4a3aa7; --s8: #e34948;
-    --good-text: #006300; --status-good: #0ca30c; --status-warn: #fab219;
-    --status-serious: #ec835a; --status-crit: #d03b3b;
-    --neutral-mid: #efeeea;
-    --accent-soft: rgba(42, 120, 214, .10);
-    --shadow: 0 1px 2px rgba(11,11,11,.04), 0 10px 28px -14px rgba(11,11,11,.14);
-    --shadow-lg: 0 2px 6px rgba(11,11,11,.05), 0 24px 48px -20px rgba(11,11,11,.22);
-    --radius: 14px;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      color-scheme: dark;
-      --page: #0d0d0d; --surface: #1a1a19; --sidebar: #161615;
-      --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
-      --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,.09);
-      --s1: #3987e5; --s1-soft: #1c5cab; --s1-softer: #184f95;
-      --s2: #008300; --s3: #d55181; --s4: #c98500; --s5: #199e70;
-      --s6: #d95926; --s7: #9085e9; --s8: #e66767;
-      --good-text: #0ca30c; --neutral-mid: #242422;
-      --accent-soft: rgba(57, 135, 229, .16);
-      --shadow: none; --shadow-lg: none;
-    }
+    --good-text: #177a52; --status-good: #22a06b; --status-warn: #f5a623;
+    --status-serious: #ec835a; --status-crit: #d64545;
+    --neutral-mid: #f0f2f5;
+    --accent-soft: rgba(33, 114, 211, .09);
+    --shadow: 0 1px 2px rgba(16,24,40,.04), 0 1px 3px rgba(16,24,40,.06);
+    --shadow-lg: 0 4px 6px rgba(16,24,40,.05), 0 12px 24px -8px rgba(16,24,40,.14);
+    --radius: 12px;
   }
   * { box-sizing: border-box; }
   html, body { height: 100%; }
   body {
     margin: 0; background: var(--page); color: var(--ink);
-    font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+    font: 14px/1.5 Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
   }
   svg.ic { width: 18px; height: 18px; flex: none; }
 
@@ -66,12 +54,16 @@
     display: flex; align-items: center; gap: 11px;
     padding: 9px 11px; border-radius: 10px; text-decoration: none;
     color: var(--ink-2); font-weight: 550; font-size: 13.5px;
+    border: 1px solid transparent;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   #nav a svg { color: var(--muted); }
   #nav a:hover { background: var(--neutral-mid); color: var(--ink); }
-  #nav a.on { background: var(--accent-soft); color: var(--s1); }
+  #nav a.on { background: var(--surface); color: var(--ink);
+    border-color: var(--border); box-shadow: var(--shadow); }
   #nav a.on svg { color: var(--s1); }
+  .nav-sec { color: var(--muted); font-size: 11px; font-weight: 650;
+    letter-spacing: .4px; text-transform: uppercase; padding: 14px 11px 4px; }
   .side-foot { margin-top: auto; border-top: 1px solid var(--border); padding-top: 10px; }
   .user-card { display: flex; align-items: center; gap: 10px; padding: 6px 8px; }
   .user-card .u-meta { min-width: 0; flex: 1; }
@@ -161,18 +153,14 @@
   .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(182px,1fr)); gap: 12px; }
   .tile {
     background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 14px; box-shadow: var(--shadow);
-    display: flex; gap: 12px; align-items: flex-start;
+    border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow);
   }
-  .tile .t-ic { width: 38px; height: 38px; border-radius: 11px; flex: none;
-    background: var(--accent-soft); color: var(--s1);
-    display: grid; place-items: center; }
-  .tile .t-ic svg { width: 19px; height: 19px; }
-  .tile .t-body { min-width: 0; }
-  .tile .v { font-size: 23px; font-weight: 750; margin: 1px 0 2px; letter-spacing: -.3px; }
-  .tile .l { color: var(--muted); font-size: 10.5px; text-transform: uppercase;
-             letter-spacing: .6px; font-weight: 650; }
-  .tile .s { color: var(--ink-2); font-size: 12px; }
+  .tile .t-top { display: flex; align-items: center; gap: 8px;
+    color: var(--muted); font-size: 12.5px; font-weight: 550; margin-bottom: 9px; }
+  .tile .t-top svg { width: 16px; height: 16px; color: var(--muted); }
+  .tile .v { font-size: 23px; font-weight: 750; letter-spacing: -.4px;
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .tile .s { color: var(--muted); font-size: 12px; margin-top: 5px; }
 
   /* ---------- people ---------- */
   .avatar {
@@ -186,9 +174,8 @@
 
   /* ---------- tables ---------- */
   table { width: 100%; border-collapse: collapse; }
-  th { text-align: left; color: var(--muted); font-size: 10.5px;
-       text-transform: uppercase; letter-spacing: .5px; font-weight: 650;
-       padding: 6px 10px; border-bottom: 1px solid var(--grid); }
+  th { text-align: left; color: var(--muted); font-size: 12px;
+       font-weight: 550; padding: 7px 10px; border-bottom: 1px solid var(--grid); }
   td { padding: 7px 10px; border-bottom: 1px solid var(--grid);
        font-variant-numeric: tabular-nums; }
   tr:last-child td { border-bottom: 0; }
@@ -196,6 +183,11 @@
   tr.click:hover td { background: var(--neutral-mid); }
   .up { color: var(--good-text); font-weight: 600; }
   .down { color: var(--status-crit); font-weight: 600; }
+  .pill { display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px;
+    border-radius: 99px; font-size: 11.5px; font-weight: 650;
+    font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .pill.up { background: #e7f3ed; color: var(--good-text); }
+  .pill.down { background: #fdecec; color: #c03d3d; }
   .chip { display: inline-block; padding: 2px 9px; border-radius: 99px;
           font-size: 11px; font-weight: 650; white-space: nowrap; }
   .chip.high { background: var(--status-crit); color: #fff; }
@@ -210,8 +202,7 @@
                   overflow: hidden; text-overflow: ellipsis; }
   .bar-row .n { text-align: right; font-variant-numeric: tabular-nums; font-size: 12.5px; }
   .bar-track { height: 9px; border-radius: 5px; background: var(--neutral-mid); }
-  .bar-fill { height: 9px; border-radius: 5px; min-width: 3px;
-    background: linear-gradient(90deg, var(--s1), color-mix(in srgb, var(--s1) 70%, var(--s7))); }
+  .bar-fill { height: 9px; border-radius: 5px; min-width: 3px; background: var(--s1); }
 
   /* ---------- class cards ---------- */
   .grid-classes { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px,1fr)); gap: 12px; }
@@ -257,7 +248,7 @@
   .spark-card .last { font-weight: 750; font-size: 16px; }
   .spark-card.flagged { border-color: color-mix(in srgb, var(--status-crit) 55%, transparent); }
   .spark-card.flagged .last { color: var(--status-crit); }
-  svg text { font: 11px system-ui, -apple-system, "Segoe UI", sans-serif; fill: var(--muted); }
+  svg text { font: 11px Inter, "Segoe UI", system-ui, sans-serif; fill: var(--muted); }
 
   /* ---------- misc ---------- */
   #tip {
@@ -330,9 +321,6 @@
   .st-open    { background: color-mix(in srgb, var(--status-good) 20%, transparent); color: var(--good-text); }
   .st-closed  { background: var(--neutral-mid); color: var(--muted); }
   .st-rejected{ background: color-mix(in srgb, var(--status-crit) 18%, transparent); color: var(--status-crit); }
-  @media (prefers-color-scheme: dark) {
-    .st-pending { color: var(--status-warn); } .st-approved { color: var(--s1); }
-  }
   .score-badge { font-size: 20px; font-weight: 750; letter-spacing: -.3px; }
   .actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 14px 0; }
 
@@ -542,6 +530,9 @@ en: {
   examCreated: 'Exam created and sent for approval.',
   examTitleHint: 'e.g. Week 3: Algebra',
   examHistory: 'Exam results',
+  welcome: (n) => `Welcome back, ${n}!`,
+  welcomeSub: "Track the school's progress here.",
+  navSecSchool: 'School', navSecOther: 'Other',
   examBuilderNeed: 'Fill in the title, pick a class, and add at least one complete question.',
 },
 hy: {
@@ -667,6 +658,9 @@ hy: {
   examCreated: 'Քննությունը ստեղծվեց և ուղարկվեց հաստատման։',
   examTitleHint: 'օր. Շաբաթ 3. Հանրահաշիվ',
   examHistory: 'Քննությունների արդյունքներ',
+  welcome: (n) => `Բարի վերադարձ, ${n}`,
+  welcomeSub: 'Հետևեք դպրոցի առաջընթացին այստեղ։',
+  navSecSchool: 'Դպրոց', navSecOther: 'Այլ',
   examBuilderNeed: 'Լրացրեք վերնագիրը, ընտրեք դասարանը և ավելացրեք գոնե մեկ ամբողջական հարց։',
 },
 };
@@ -715,8 +709,8 @@ const api = async (p) => {
 };
 const fmt = (x, d=2) => x == null ? '–' : (+x).toFixed(d);
 const deltaHtml = (d) => d == null ? '<span class="muted">–</span>'
-  : d >= 0 ? `<span class="up">▲ +${(+d).toFixed(2)}</span>`
-           : `<span class="down">▼ ${(+d).toFixed(2)}</span>`;
+  : d >= 0 ? `<span class="pill up">↑ +${(+d).toFixed(2)}</span>`
+           : `<span class="pill down">↓ ${(+d).toFixed(2)}</span>`;
 const BADGE = { gold:'🥇', silver:'🥈', bronze:'🥉', riser:'🚀', perfect:'⭐', mentor:'🤝' };
 const badgeName = (code) => (T[lang].badgeNames || T.en.badgeNames)[code] || code;
 const riskChip = (r) => r === 'high'
@@ -762,9 +756,8 @@ function avatar(name, lg=false) {
 const person = (name) => `<span class="person">${avatar(name)}<span class="p-name">${esc(name)}</span></span>`;
 
 function tile(ic, label, value, sub) {
-  return `<div class="tile"><div class="t-ic">${icon(ic)}</div><div class="t-body">
-    <div class="l">${label}</div><div class="v">${value}</div><div class="s">${sub}</div>
-  </div></div>`;
+  return `<div class="tile"><div class="t-top">${icon(ic)}<span>${label}</span></div>
+    <div class="v">${value}</div><div class="s">${sub}</div></div>`;
 }
 
 const RANK_MEDAL = { 1: '🥇', 2: '🥈', 3: '🥉' };
@@ -892,7 +885,11 @@ async function vOverview() {
   const maxS = Math.max(...subjRows.map(r => r.value), 1);
   const tu = o.tutoring || {};
   const latestYear = `${o.period.latest_year}-${String(o.period.latest_year + 1).slice(2)}`;
+  const firstName = ME && !ME.open && ME.name ? ME.name.split(' ')[0] : null;
   view.innerHTML = `
+  <div class="page-head"><div>
+    <h2 style="font-size:22px">${firstName ? esc(t('welcome', firstName)) : t('navOverview')}</h2>
+    <div class="ph-sub">${t('welcomeSub')}</div></div></div>
   <div class="tiles">
     ${tile('student', t('activeStudents'), o.n_students_active,
            t('classesTeachers', o.n_classes, o.n_teachers))}
@@ -1448,10 +1445,12 @@ function navHtml() {
                  + navItem('#about', 'about', t('navAbout'));
   }
   return navItem('#overview', 'overview', t('navOverview'))
+       + `<div class="nav-sec">${t('navSecSchool')}</div>`
        + navItem('#classes', 'classes', t('navClasses'))
        + navItem('#students', 'student', t('navStudents'))
        + navItem('#teachers', 'teachers', t('navTeachers'))
        + navItem('#exams', 'exam', t('navExams'))
+       + `<div class="nav-sec">${t('navSecOther')}</div>`
        + navItem('#about', 'about', t('navAbout'));
 }
 
