@@ -64,9 +64,26 @@ Sample exams are labelled by week and use real, auto-checkable questions
 (arithmetic for maths; a general-knowledge bank otherwise). A real school
 writes its own questions through the exam builder in the dashboard.
 
-## Note on scope
+## Exam results feed the score
 
-Exam results currently live in their own tables with their own scoring and
-history; they are not yet folded into the quarterly Gitak Score and the
-prediction model. Bridging weekly-exam performance into the quarter average is
-a natural next step — see the roadmap in the [README](../README.md).
+When a teacher **closes** an exam, each submission is recorded into the real
+grade book as a `weekly` grade (the score out of 10, one row per student) for
+that subject and quarter. From there the ordinary pipeline takes over: the
+quarter average, the Gitak Score, class ranks, badges and teacher
+value-added all update, so a student's standing reflects the exams they have
+sat. The recording is idempotent and happens automatically on close; to
+backfill exams that were closed before this feature existed, run:
+
+```bash
+python -m gitak quiz sync-grades
+```
+
+Two deliberate boundaries:
+
+- Weekly exams accrue *during* a quarter, so they never mark a quarter as
+  "completed" — the planning period and the end-of-quarter logic still key off
+  journal grades (quizzes and finals).
+- Weekly results are **excluded from the forecasting model's history**. The
+  model learns quarter-to-quarter transitions from completed journal quarters;
+  feeding it partial in-progress exam data would blur those transitions. Exams
+  move the *score* a student has now, not the *forecast* for next quarter.

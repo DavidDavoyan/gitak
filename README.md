@@ -125,7 +125,6 @@ tests/          pytest end-to-end suite
 
 ## Roadmap
 
-- Fold weekly-exam results into the quarter score and the prediction model
 - E-journal API connectors (beyond CSV)
 - Alignment with Ministry of Education assessment standards
 - Multi-school benchmarking with privacy-preserving aggregates

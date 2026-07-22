@@ -3,7 +3,7 @@ item analysis, and role scoping through the API."""
 
 import pytest
 
-from gitak import db, quizzes
+from gitak import db, ml, quizzes
 from gitak.seed import seed
 
 
@@ -115,11 +115,62 @@ def test_content_hiding(school):
     assert od["questions"] and all("correct" not in q for q in od["questions"])
 
 
+def test_closed_exam_feeds_the_gradebook(school):
+    con, _ = school
+    before = db.latest_completed_period(con)
+
+    sid = con.execute("SELECT id, class_id FROM students LIMIT 1").fetchone()
+    subj = _subject(con, "english")
+    qid = quizzes.create_quiz(con, None, {"subject_id": subj, "class_id": sid["class_id"],
+        "title": "Gradebook", "questions": _good_questions(5)})
+    for a in ("submit", "approve", "open"):
+        quizzes.transition(con, None, qid, a)
+    viewer = {"role": "student", "student_ids": [sid["id"]], "class_ids": [sid["class_id"]]}
+    qq = con.execute("SELECT id, correct FROM quiz_questions WHERE quiz_id=? ORDER BY position",
+                    (qid,)).fetchall()
+    quizzes.submit(con, viewer, qid, {str(q["id"]): q["correct"] for q in qq})  # perfect
+
+    # no grade-book row until the exam is closed
+    q = con.execute("SELECT grade_exam_id, school_year, quarter FROM quizzes WHERE id=?",
+                    (qid,)).fetchone()
+    assert q["grade_exam_id"] is None
+    quizzes.transition(con, None, qid, "close")
+
+    q = con.execute("SELECT grade_exam_id, school_year, quarter FROM quizzes WHERE id=?",
+                    (qid,)).fetchone()
+    assert q["grade_exam_id"] is not None
+    grade = con.execute(
+        "SELECT g.grade FROM grades g JOIN exams e ON e.id = g.exam_id "
+        "WHERE e.kind='weekly' AND e.id=? AND g.student_id=?",
+        (q["grade_exam_id"], sid["id"])).fetchone()
+    assert grade["grade"] == 10  # a perfect submission is a 10
+
+    # the student now has a Gitak Score standing for that quarter
+    sc = con.execute(
+        "SELECT score FROM scores WHERE student_id=? AND school_year=? AND quarter=?",
+        (sid["id"], q["school_year"], q["quarter"])).fetchone()
+    assert sc is not None and sc["score"] > 0
+
+    # weekly grades must NOT advance the completed-period marker
+    assert db.latest_completed_period(con) == before
+    # recording again is a no-op
+    assert quizzes.record_to_gradebook(con, qid) is None
+
+
+def test_weekly_excluded_from_model(school):
+    con, _ = school
+    # weekly grades exist, yet the model trains and stays accurate
+    assert con.execute("SELECT COUNT(*) c FROM exams WHERE kind='weekly'").fetchone()["c"] > 0
+    summary = ml.train_and_predict(con, echo=lambda *_: None)
+    assert summary["mae"] is not None and summary["mae"] < 1.2
+
+
 def test_item_analysis(school):
     con, _ = school
-    closed = next(q for q in quizzes.list_quizzes(con, None)["quizzes"]
-                  if q["status"] == "closed")
-    d = quizzes.quiz_detail(con, None, closed["id"])
+    closed_id = con.execute(
+        "SELECT id FROM quizzes WHERE status='closed' AND created_by='demo' LIMIT 1"
+    ).fetchone()["id"]
+    d = quizzes.quiz_detail(con, None, closed_id)
     a = d["analysis"]
     assert a["n_submitted"] > 0 and a["n_students"] >= a["n_submitted"]
     assert len(a["questions"]) == 10

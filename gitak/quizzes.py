@@ -22,7 +22,7 @@ the exam nor the answer key before they submit.
 import json
 from datetime import datetime, timezone
 
-from . import reports
+from . import reports, scoring
 
 STATUSES = ("draft", "pending", "approved", "open", "closed", "rejected")
 
@@ -190,7 +190,50 @@ def transition(con, viewer, quiz_id, action, note=None):
     params.append(quiz_id)
     con.execute(f"UPDATE quizzes SET {', '.join(sets)} WHERE id = ?", params)
     con.commit()
+    if action == "close":
+        record_to_gradebook(con, quiz_id)
     return spec["to"]
+
+
+def record_to_gradebook(con, quiz_id):
+    """Fold a closed exam's results into the real grade book: one 'weekly'
+    exam row plus each submission's score as an integer 1-10 grade. From
+    there the quarter average, Gitak Score, badges, teacher value-added and
+    the prediction model all pick it up through the normal pipeline.
+
+    Idempotent (grade_exam_id marks it done); a no-op with no submissions.
+    Returns the created grade-book exam id, or None."""
+    quiz = _get(con, quiz_id)
+    if quiz["status"] != "closed" or quiz["grade_exam_id"]:
+        return None
+    subs = con.execute(
+        "SELECT student_id, score FROM quiz_submissions WHERE quiz_id = ?",
+        (quiz_id,)).fetchall()
+    if not subs:
+        return None
+    cur = con.execute(
+        "INSERT INTO exams (school_year, quarter, subject_id, class_id, kind) "
+        "VALUES (?,?,?,?,'weekly')",
+        (quiz["school_year"], quiz["quarter"], quiz["subject_id"], quiz["class_id"]))
+    exam_id = cur.lastrowid
+    con.executemany(
+        "INSERT INTO grades (exam_id, student_id, grade) VALUES (?,?,?)",
+        [(exam_id, s["student_id"], max(1, min(10, round(s["score"]))))
+         for s in subs])
+    con.execute("UPDATE quizzes SET grade_exam_id = ? WHERE id = ?", (exam_id, quiz_id))
+    con.commit()
+    # refresh the running standings for the quarter the exam belongs to
+    scoring.compute_quarter(con, quiz["school_year"], quiz["quarter"])
+    return exam_id
+
+
+def sync_gradebook(con):
+    """Backfill: record every closed exam that has not been folded into the
+    grade book yet (for databases created before this feature)."""
+    rows = con.execute(
+        "SELECT id FROM quizzes WHERE status = 'closed' AND grade_exam_id IS NULL"
+    ).fetchall()
+    return sum(1 for r in rows if record_to_gradebook(con, r["id"]))
 
 
 # ------------------------------------------------------------- submissions ---
@@ -662,6 +705,8 @@ def seed_demo_quizzes(con, rng=None, echo=lambda *_: None):
                                          rng.uniform(0.45, 0.95), rng)
         made += 1
     con.commit()
+    folded = sync_gradebook(con)   # closed exams flow into the grade book
     echo(f"seeded {made} sample exams across statuses "
-         f"(draft, pending, approved, open, closed)")
+         f"(draft, pending, approved, open, closed); "
+         f"{folded} closed exams recorded into the grade book")
     return made

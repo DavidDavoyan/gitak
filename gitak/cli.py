@@ -72,6 +72,10 @@ def cmd_quiz(args):
         n = quizzes.seed_demo_quizzes(con)
         print(f"added {n} sample exams" if n
               else "exams already exist (or no school data); nothing added")
+    elif args.quiz_cmd == "sync-grades":
+        n = quizzes.sync_gradebook(con)
+        print(f"recorded {n} closed exam(s) into the grade book"
+              if n else "nothing to sync; all closed exams already recorded")
 
 
 def cmd_report(args):
@@ -223,6 +227,8 @@ def main(argv=None):
     p = sub.add_parser("quiz", help="weekly exams")
     qp = p.add_subparsers(dest="quiz_cmd", required=True)
     qp.add_parser("demo-seed", help="add sample exams to an existing demo database")
+    qp.add_parser("sync-grades",
+                  help="record closed exams into the grade book (backfill)")
     p.set_defaults(fn=cmd_quiz)
 
     p = sub.add_parser("serve", help="start the web dashboard")

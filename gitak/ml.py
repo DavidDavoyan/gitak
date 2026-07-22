@@ -31,12 +31,17 @@ ABSENCE_FLAG_RATE = 0.10
 
 
 def _load(con):
+    # The forecasting timeline is built from COMPLETED journal quarters only.
+    # 'weekly' grades accrue mid-quarter and count toward the current-quarter
+    # score, but feeding partial in-progress data into the model would blur the
+    # quarter-to-quarter transitions it learns, so they are excluded here.
     rows = con.execute("""
         SELECT g.student_id sid, e.subject_id subj, e.school_year y, e.quarter q,
                e.class_id cls,
                SUM(g.grade * CASE e.kind WHEN 'final' THEN 2 ELSE 1 END) * 1.0 /
                SUM(CASE e.kind WHEN 'final' THEN 2 ELSE 1 END) AS avg
         FROM grades g JOIN exams e ON e.id = g.exam_id
+        WHERE e.kind != 'weekly'
         GROUP BY g.student_id, e.subject_id, e.school_year, e.quarter
     """).fetchall()
     timelines, overall_acc, class_acc = {}, {}, {}

@@ -60,7 +60,11 @@ CREATE TABLE IF NOT EXISTS exams (
     quarter INTEGER NOT NULL,
     subject_id INTEGER NOT NULL REFERENCES subjects(id),
     class_id INTEGER NOT NULL REFERENCES classes(id),
-    kind TEXT NOT NULL              -- quiz | final (final = end-of-quarter exam)
+    kind TEXT NOT NULL              -- quiz | final | weekly
+    -- quiz  = current work from the journal/import (weight 1)
+    -- final = end-of-quarter exam (weight 2)
+    -- weekly = auto-recorded from a closed interactive weekly exam (weight 1);
+    --          never marks a quarter as completed (see latest_completed_period)
 );
 
 CREATE TABLE IF NOT EXISTS grades (
@@ -167,6 +171,7 @@ CREATE TABLE IF NOT EXISTS quizzes (
     school_year INTEGER NOT NULL,
     quarter INTEGER NOT NULL,
     week INTEGER,                                  -- optional week-of-quarter number
+    grade_exam_id INTEGER REFERENCES exams(id),    -- grade-book row created on close
     status TEXT NOT NULL DEFAULT 'draft',
     scheduled_for TEXT,                            -- date students see it planned for
     created_by TEXT,
@@ -262,6 +267,10 @@ def init_db(con: sqlite3.Connection) -> None:
     cols = [r["name"] for r in con.execute("PRAGMA table_info(students)").fetchall()]
     if "external_id" not in cols:
         con.execute("ALTER TABLE students ADD COLUMN external_id TEXT")
+    # migration for databases created before weekly exams fed the grade book
+    qcols = [r["name"] for r in con.execute("PRAGMA table_info(quizzes)").fetchall()]
+    if qcols and "grade_exam_id" not in qcols:
+        con.execute("ALTER TABLE quizzes ADD COLUMN grade_exam_id INTEGER REFERENCES exams(id)")
     con.executemany(
         "INSERT OR IGNORE INTO subjects (code, name_en, name_hy, domain, level_min, level_max) "
         "VALUES (?,?,?,?,?,?)", SUBJECT_CATALOG)
@@ -274,9 +283,12 @@ def grade_level(cohort_year: int, school_year: int) -> int:
 
 
 def latest_completed_period(con: sqlite3.Connection) -> tuple[int, int] | None:
+    """The newest (year, quarter) with journal grades. Weekly interactive
+    exams accumulate DURING a quarter, so they never advance this marker;
+    only quiz/final grades from the journal or an import do."""
     row = con.execute(
-        "SELECT school_year, quarter FROM exams ORDER BY school_year DESC, quarter DESC LIMIT 1"
-    ).fetchone()
+        "SELECT school_year, quarter FROM exams WHERE kind != 'weekly' "
+        "ORDER BY school_year DESC, quarter DESC LIMIT 1").fetchone()
     return (row["school_year"], row["quarter"]) if row else None
 
 

@@ -530,6 +530,7 @@ en: {
   examCreated: 'Exam created and sent for approval.',
   examTitleHint: 'e.g. Week 3: Algebra',
   examHistory: 'Exam results',
+  examCountsToScore: 'Results are recorded in the grade book and count toward the quarter score.',
   welcome: (n) => `Welcome back, ${n}!`,
   welcomeSub: "Track the school's progress here.",
   navSecSchool: 'School', navSecOther: 'Other',
@@ -658,6 +659,7 @@ hy: {
   examCreated: 'Քննությունը ստեղծվեց և ուղարկվեց հաստատման։',
   examTitleHint: 'օր. Շաբաթ 3. Հանրահաշիվ',
   examHistory: 'Քննությունների արդյունքներ',
+  examCountsToScore: 'Արդյունքները գրանցվում են մատյանում և հաշվվում են քառորդի միավորում։',
   welcome: (n) => `Բարի վերադարձ, ${n}`,
   welcomeSub: 'Հետևեք դպրոցի առաջընթացին այստեղ։',
   navSecSchool: 'Դպրոց', navSecOther: 'Այլ',
@@ -1180,6 +1182,8 @@ async function vExam(id) {
   if (q.status === 'rejected' && q.review_note)
     html += `<div class="card" style="border-color:var(--status-crit);margin-bottom:14px">
       ${esc(t('examRejectedNote', q.review_note))}</div>`;
+  if (q.status === 'closed')
+    html += `<div class="note" style="margin:-6px 0 14px">${t('examCountsToScore')}</div>`;
 
   // manager lifecycle actions
   if (canManage) {
