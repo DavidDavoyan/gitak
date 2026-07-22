@@ -13,7 +13,8 @@
 import argparse
 import sys
 
-from . import auth, config, db, importer, ml, pairing, reports, seed as seed_mod
+from . import (auth, config, db, importer, ml, pairing, quizzes, reports,
+               seed as seed_mod)
 
 
 def _connect(args):
@@ -60,7 +61,17 @@ def cmd_demo(args):
     cmd_seed(args)
     cmd_predict(args)
     cmd_pair(args)
+    con = _connect(args)
+    quizzes.seed_demo_quizzes(con)
     print(f"done. start the dashboard with: python -m gitak serve")
+
+
+def cmd_quiz(args):
+    con = _connect(args)
+    if args.quiz_cmd == "demo-seed":
+        n = quizzes.seed_demo_quizzes(con)
+        print(f"added {n} sample exams" if n
+              else "exams already exist (or no school data); nothing added")
 
 
 def cmd_report(args):
@@ -208,6 +219,11 @@ def main(argv=None):
     dl = up.add_parser("delete", help="delete an account")
     dl.add_argument("username")
     p.set_defaults(fn=cmd_users)
+
+    p = sub.add_parser("quiz", help="weekly exams")
+    qp = p.add_subparsers(dest="quiz_cmd", required=True)
+    qp.add_parser("demo-seed", help="add sample exams to an existing demo database")
+    p.set_defaults(fn=cmd_quiz)
 
     p = sub.add_parser("serve", help="start the web dashboard")
     p.add_argument("--port", type=int, default=config.DEFAULT_PORT)

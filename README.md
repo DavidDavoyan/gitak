@@ -27,6 +27,7 @@ The project is built for the Armenian school reality: a 10-point grading scale, 
 - **Lifetime transcript.** One JSON export per student with every exam, score, badge and flag across all 12 years. The record belongs to the student.
 - **Web dashboard.** School overview, class leaderboards, student profiles with per-subject sparklines, teacher table. Fully bilingual UI with an EN | ՀԱՅ toggle (Armenian mode localizes everything down to class letters, 8B becomes 8Բ, and the model's flag reasons); light and dark mode, zero frontend dependencies. `?lang=hy` in the URL works too.
 - **Accounts and roles.** Directors see everything, teachers see the school but only their own value-added row, students and parents see their own pages plus their class leaderboard, never another child's flags. No accounts = open demo mode; the first account locks the school. Bulk provisioning creates every student and teacher account in one command. Details: [docs/ACCOUNTS.md](docs/ACCOUNTS.md).
+- **Weekly exams.** Teachers author a checklist of multiple-choice questions, the director approves it, students see it is coming but not the content until the teacher opens it in class, then submit once and are graded instantly. The teacher gets a per-question item analysis showing exactly which question each student is weak on. Content-hiding is enforced server-side. Details: [docs/EXAMS.md](docs/EXAMS.md).
 
 ## Quickstart
 
@@ -43,7 +44,7 @@ python -m gitak demo          # synthetic school: seed + predict + pair (~1 min)
 python -m gitak serve         # dashboard at http://localhost:3303
 ```
 
-Other commands: `seed`, `predict`, `pair`, `report` (console summary), `users` (accounts and roles). Run tests with `pip install -r requirements-dev.txt && python -m pytest`.
+Other commands: `seed`, `predict`, `pair`, `report` (console summary), `users` (accounts and roles), `quiz demo-seed` (sample weekly exams). Run tests with `pip install -r requirements-dev.txt && python -m pytest`.
 
 The demo school is entirely synthetic: about 600 students across grades 1-12, three full school years, 200k+ exam grades, realistic Armenian names and curriculum. No real child's data is in this repository, ever.
 
@@ -124,6 +125,7 @@ tests/          pytest end-to-end suite
 
 ## Roadmap
 
+- Fold weekly-exam results into the quarter score and the prediction model
 - E-journal API connectors (beyond CSV)
 - Alignment with Ministry of Education assessment standards
 - Multi-school benchmarking with privacy-preserving aggregates

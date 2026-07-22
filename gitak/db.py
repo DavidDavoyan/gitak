@@ -154,12 +154,67 @@ CREATE TABLE IF NOT EXISTS model_runs (
     notes TEXT
 );
 
+-- Interactive weekly exams (author -> approve -> open -> submit -> grade).
+-- Distinct from the `exams` grade-container table above: these hold real
+-- questions students answer online. Status flow:
+--   draft -> pending -> approved -> open -> closed   (or pending -> rejected)
+CREATE TABLE IF NOT EXISTS quizzes (
+    id INTEGER PRIMARY KEY,
+    subject_id INTEGER NOT NULL REFERENCES subjects(id),
+    class_id INTEGER NOT NULL REFERENCES classes(id),
+    teacher_id INTEGER REFERENCES teachers(id),   -- author (null in open demo)
+    title TEXT NOT NULL,
+    school_year INTEGER NOT NULL,
+    quarter INTEGER NOT NULL,
+    week INTEGER,                                  -- optional week-of-quarter number
+    status TEXT NOT NULL DEFAULT 'draft',
+    scheduled_for TEXT,                            -- date students see it planned for
+    created_by TEXT,
+    created_at TEXT NOT NULL,
+    reviewed_by TEXT,                              -- director who approved/rejected
+    reviewed_at TEXT,
+    review_note TEXT,
+    opened_at TEXT,
+    closed_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS quiz_questions (
+    id INTEGER PRIMARY KEY,
+    quiz_id INTEGER NOT NULL REFERENCES quizzes(id) ON DELETE CASCADE,
+    position INTEGER NOT NULL,
+    prompt TEXT NOT NULL,
+    options TEXT NOT NULL,          -- JSON array of option strings
+    correct INTEGER NOT NULL        -- index of the correct option (hidden from students)
+);
+
+CREATE TABLE IF NOT EXISTS quiz_submissions (
+    id INTEGER PRIMARY KEY,
+    quiz_id INTEGER NOT NULL REFERENCES quizzes(id) ON DELETE CASCADE,
+    student_id INTEGER NOT NULL REFERENCES students(id),
+    submitted_at TEXT NOT NULL,
+    score REAL,                     -- 0-10 (10 * correct / total)
+    n_correct INTEGER,
+    n_total INTEGER,
+    UNIQUE (quiz_id, student_id)
+);
+
+CREATE TABLE IF NOT EXISTS quiz_responses (
+    submission_id INTEGER NOT NULL REFERENCES quiz_submissions(id) ON DELETE CASCADE,
+    question_id INTEGER NOT NULL REFERENCES quiz_questions(id),
+    chosen INTEGER,                 -- option index chosen, or NULL if skipped
+    correct INTEGER NOT NULL,       -- 1 / 0
+    PRIMARY KEY (submission_id, question_id)
+);
+
 CREATE INDEX IF NOT EXISTS idx_grades_student ON grades(student_id);
 CREATE INDEX IF NOT EXISTS idx_grades_exam ON grades(exam_id);
 CREATE INDEX IF NOT EXISTS idx_exams_period ON exams(school_year, quarter, subject_id, class_id);
 CREATE INDEX IF NOT EXISTS idx_flags_period ON flags(school_year, quarter);
 CREATE INDEX IF NOT EXISTS idx_pairings_period ON pairings(school_year, quarter);
 CREATE INDEX IF NOT EXISTS idx_scores_period ON scores(school_year, quarter);
+CREATE INDEX IF NOT EXISTS idx_quizzes_class ON quizzes(class_id, status);
+CREATE INDEX IF NOT EXISTS idx_quiz_questions ON quiz_questions(quiz_id, position);
+CREATE INDEX IF NOT EXISTS idx_quiz_submissions ON quiz_submissions(quiz_id);
 """
 
 

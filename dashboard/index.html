@@ -304,6 +304,86 @@
   .login-card input:focus { outline: none; border-color: var(--s1); }
   .login-card .err { color: var(--status-crit); font-size: 12.5px; min-height: 18px;
                      margin: 0 0 8px; }
+
+  /* ---------- exams ---------- */
+  .exam-list { display: flex; flex-direction: column; gap: 10px; }
+  .exam-row {
+    display: flex; align-items: center; gap: 14px; padding: 13px 16px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); box-shadow: var(--shadow); cursor: pointer;
+    transition: border-color .12s ease;
+  }
+  .exam-row:hover { border-color: var(--s1); }
+  .exam-row .e-ic { width: 40px; height: 40px; border-radius: 12px; flex: none;
+    background: var(--accent-soft); color: var(--s1); display: grid; place-items: center; }
+  .exam-row .e-main { flex: 1; min-width: 0; }
+  .exam-row .e-title { font-weight: 650; font-size: 14px; }
+  .exam-row .e-sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .exam-row .e-side { text-align: right; flex: none; display: flex;
+    flex-direction: column; align-items: flex-end; gap: 4px; }
+  .status-pill { display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 650; }
+  .status-pill svg { width: 13px; height: 13px; }
+  .st-draft   { background: var(--neutral-mid); color: var(--ink-2); }
+  .st-pending { background: color-mix(in srgb, var(--status-warn) 22%, transparent); color: #7a5200; }
+  .st-approved{ background: color-mix(in srgb, var(--s1) 16%, transparent); color: var(--s1); }
+  .st-open    { background: color-mix(in srgb, var(--status-good) 20%, transparent); color: var(--good-text); }
+  .st-closed  { background: var(--neutral-mid); color: var(--muted); }
+  .st-rejected{ background: color-mix(in srgb, var(--status-crit) 18%, transparent); color: var(--status-crit); }
+  @media (prefers-color-scheme: dark) {
+    .st-pending { color: var(--status-warn); } .st-approved { color: var(--s1); }
+  }
+  .score-badge { font-size: 20px; font-weight: 750; letter-spacing: -.3px; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 14px 0; }
+
+  /* exam builder */
+  .field { margin-bottom: 14px; }
+  .field label { display: block; color: var(--muted); font-size: 11px;
+    text-transform: uppercase; letter-spacing: .5px; font-weight: 650; margin: 0 0 5px 2px; }
+  .field input, .field select { width: 100%; max-width: 460px; padding: 9px 12px;
+    border-radius: 10px; border: 1px solid var(--border); background: var(--page);
+    color: var(--ink); font: inherit; }
+  .field input:focus, .field select:focus { outline: none; border-color: var(--s1); }
+  .field.row { display: flex; gap: 12px; flex-wrap: wrap; }
+  .field.row > div { flex: 1; min-width: 180px; }
+  .qbuilder { background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px 16px; margin-bottom: 12px; box-shadow: var(--shadow); }
+  .qbuilder .qb-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .qbuilder .qb-num { font-weight: 650; font-size: 13px; }
+  .qbuilder .qb-prompt { width: 100%; padding: 9px 12px; border-radius: 10px;
+    border: 1px solid var(--border); background: var(--page); color: var(--ink);
+    font: inherit; margin-bottom: 10px; }
+  .qb-opt { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; }
+  .qb-opt input[type=text] { flex: 1; padding: 8px 11px; border-radius: 9px;
+    border: 1px solid var(--border); background: var(--page); color: var(--ink); font: inherit; }
+  .qb-opt label { display: inline-flex; align-items: center; gap: 5px; color: var(--muted);
+    font-size: 11.5px; white-space: nowrap; cursor: pointer; }
+
+  /* exam taking */
+  .take-q { background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 15px 17px; margin-bottom: 12px; box-shadow: var(--shadow); }
+  .take-q .tq-prompt { font-weight: 600; font-size: 14px; margin-bottom: 12px; }
+  .take-q .tq-prompt .num { color: var(--muted); font-weight: 650; margin-right: 7px; }
+  .opt {
+    display: flex; align-items: center; gap: 11px; padding: 10px 13px; margin-bottom: 8px;
+    border: 1px solid var(--border); border-radius: 11px; cursor: pointer;
+    transition: border-color .1s ease, background .1s ease;
+  }
+  .opt:hover { border-color: var(--axis); }
+  .opt.sel { border-color: var(--s1); background: var(--accent-soft); }
+  .opt .dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--axis); flex: none; }
+  .opt.sel .dot { border-color: var(--s1); background: var(--s1);
+    box-shadow: inset 0 0 0 3px var(--surface); }
+  .opt.correct { border-color: var(--status-good); background: color-mix(in srgb, var(--status-good) 12%, transparent); }
+  .opt.wrong { border-color: var(--status-crit); background: color-mix(in srgb, var(--status-crit) 12%, transparent); }
+  .opt .mark { margin-left: auto; font-size: 11.5px; font-weight: 650; }
+  .opt .mark.ok { color: var(--good-text); } .opt .mark.no { color: var(--status-crit); }
+  .diff-cell { display: inline-flex; align-items: center; gap: 8px; min-width: 120px; }
+  .diff-track { width: 60px; height: 7px; border-radius: 4px; background: var(--neutral-mid); }
+  .diff-fill { height: 7px; border-radius: 4px; }
+  .wrong-chip { display: inline-block; background: color-mix(in srgb, var(--status-crit) 15%, transparent);
+    color: var(--status-crit); font-weight: 650; font-size: 11px; padding: 1px 7px;
+    border-radius: 6px; margin: 0 3px 3px 0; font-variant-numeric: tabular-nums; }
 </style>
 </head>
 <body>
@@ -428,8 +508,41 @@ en: {
   loginError: 'Wrong username or password.',
   notAllowed: 'This page is not available for your account.',
   signInRequired: 'Please sign in.',
-  navMyPage: 'My page', navMyClass: 'My class',
+  navMyPage: 'My page', navMyClass: 'My class', navExams: 'Exams',
   roles: { director: 'Director', teacher: 'Teacher', student: 'Student', parent: 'Parent' },
+  examsTitle: 'Weekly exams',
+  examStatus: { draft: 'Draft', pending: 'Awaiting approval', approved: 'Upcoming',
+                open: 'Open now', closed: 'Closed', rejected: 'Rejected' },
+  examNew: 'New exam', examCreate: 'Create exam',
+  examApprovalQueue: 'Awaiting your approval',
+  examNoQueue: 'Nothing waiting for approval.',
+  examAll: 'All exams', examNone: 'No exams yet.',
+  examUpcoming: 'Upcoming exams', examOpenNow: 'Open now — take it',
+  examPast: 'Past exams', examMine: 'My exams',
+  colExam: 'Exam', colWhen: 'Planned', colQuestions: 'Questions',
+  colStatus: 'Status', colSubmitted: 'Submitted', colResult: 'Result',
+  examQuestionsHidden: 'Questions are hidden until the teacher starts the exam in class.',
+  examStart: 'Start exam', examSubmit: 'Submit answers',
+  examSubmitConfirm: 'Submit your answers? You cannot change them afterwards.',
+  examYourScore: 'Your score', examCorrect: (c, n) => `${c} of ${n} correct`,
+  examReview: 'Review', examYourAnswer: 'your answer', examCorrectAnswer: 'correct answer',
+  examSubmitForApproval: 'Send for approval', examApprove: 'Approve',
+  examReject: 'Reject', examOpen: 'Start (open to class)', examClose: 'Close exam',
+  examRejectPrompt: 'Reason for rejection (optional):',
+  examRejectedNote: (n) => `Rejected${n ? ': ' + n : ''}`,
+  examBuilderTitle: 'Title', examBuilderSubject: 'Subject',
+  examBuilderClass: 'Class', examBuilderDate: 'Planned date',
+  examBuilderQuestion: (n) => `Question ${n}`,
+  examBuilderPrompt: 'Question', examBuilderOption: (n) => `Option ${n}`,
+  examBuilderCorrect: 'Correct', examBuilderAddQ: 'Add question',
+  examBuilderRemoveQ: 'Remove', examSaveDraft: 'Save & send for approval',
+  examItemAnalysis: 'Question analysis', examClassResults: 'Class results',
+  colDifficulty: '% correct', colScore: 'Score', colWrong: 'Missed questions',
+  examNotSubmitted: 'not submitted', examWeek: (n) => `Week ${n}`,
+  examCreated: 'Exam created and sent for approval.',
+  examTitleHint: 'e.g. Week 3: Algebra',
+  examHistory: 'Exam results',
+  examBuilderNeed: 'Fill in the title, pick a class, and add at least one complete question.',
 },
 hy: {
   tagline: 'Gitak · աշակերտի առաջադիմությունը՝ բաց',
@@ -520,8 +633,41 @@ hy: {
   loginError: 'Սխալ մուտքանուն կամ գաղտնաբառ։',
   notAllowed: 'Այս էջը հասանելի չէ ձեր հաշվին։',
   signInRequired: 'Խնդրում ենք մուտք գործել։',
-  navMyPage: 'Իմ էջը', navMyClass: 'Իմ դասարանը',
+  navMyPage: 'Իմ էջը', navMyClass: 'Իմ դասարանը', navExams: 'Քննություններ',
   roles: { director: 'Տնօրեն', teacher: 'Ուսուցիչ', student: 'Աշակերտ', parent: 'Ծնող' },
+  examsTitle: 'Շաբաթական քննություններ',
+  examStatus: { draft: 'Սևագիր', pending: 'Հաստատման սպասող', approved: 'Առաջիկա',
+                open: 'Բաց է հիմա', closed: 'Փակված', rejected: 'Մերժված' },
+  examNew: 'Նոր քննություն', examCreate: 'Ստեղծել քննություն',
+  examApprovalQueue: 'Սպասում է ձեր հաստատմանը',
+  examNoQueue: 'Հաստատման սպասող ոչինչ չկա։',
+  examAll: 'Բոլոր քննությունները', examNone: 'Դեռ քննություններ չկան։',
+  examUpcoming: 'Առաջիկա քննություններ', examOpenNow: 'Բաց է հիմա — հանձնիր',
+  examPast: 'Անցած քննություններ', examMine: 'Իմ քննությունները',
+  colExam: 'Քննություն', colWhen: 'Նախատեսված', colQuestions: 'Հարցեր',
+  colStatus: 'Կարգավիճակ', colSubmitted: 'Հանձնած', colResult: 'Արդյունք',
+  examQuestionsHidden: 'Հարցերը թաքնված են, մինչև ուսուցիչը դասարանում կսկսի քննությունը։',
+  examStart: 'Սկսել քննությունը', examSubmit: 'Հանձնել պատասխանները',
+  examSubmitConfirm: 'Հանձնե՞լ պատասխանները։ Հետո չեք կարողանա փոխել։',
+  examYourScore: 'Ձեր միավորը', examCorrect: (c, n) => `${c} ${n}-ից ճիշտ`,
+  examReview: 'Վերանայում', examYourAnswer: 'ձեր պատասխանը', examCorrectAnswer: 'ճիշտ պատասխանը',
+  examSubmitForApproval: 'Ուղարկել հաստատման', examApprove: 'Հաստատել',
+  examReject: 'Մերժել', examOpen: 'Սկսել (բացել դասարանի համար)', examClose: 'Փակել քննությունը',
+  examRejectPrompt: 'Մերժման պատճառը (ըստ ցանկության).',
+  examRejectedNote: (n) => `Մերժված${n ? '. ' + n : ''}`,
+  examBuilderTitle: 'Վերնագիր', examBuilderSubject: 'Առարկա',
+  examBuilderClass: 'Դասարան', examBuilderDate: 'Նախատեսված ամսաթիվ',
+  examBuilderQuestion: (n) => `Հարց ${n}`,
+  examBuilderPrompt: 'Հարց', examBuilderOption: (n) => `Տարբերակ ${n}`,
+  examBuilderCorrect: 'Ճիշտ', examBuilderAddQ: 'Ավելացնել հարց',
+  examBuilderRemoveQ: 'Հեռացնել', examSaveDraft: 'Պահել և ուղարկել հաստատման',
+  examItemAnalysis: 'Հարցերի վերլուծություն', examClassResults: 'Դասարանի արդյունքները',
+  colDifficulty: '% ճիշտ', colScore: 'Միավոր', colWrong: 'Բաց թողնված հարցեր',
+  examNotSubmitted: 'չհանձնած', examWeek: (n) => `Շաբաթ ${n}`,
+  examCreated: 'Քննությունը ստեղծվեց և ուղարկվեց հաստատման։',
+  examTitleHint: 'օր. Շաբաթ 3. Հանրահաշիվ',
+  examHistory: 'Քննությունների արդյունքներ',
+  examBuilderNeed: 'Լրացրեք վերնագիրը, ընտրեք դասարանը և ավելացրեք գոնե մեկ ամբողջական հարց։',
 },
 };
 
@@ -594,6 +740,12 @@ const ICONS = {
   calendar: '<path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m9 14 2 2 4-4"/>',
   star: '<path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21 7 14.2 2 9.3l6.9-1z"/>',
   award: '<circle cx="12" cy="8" r="6"/><path d="M15.5 13 17 22l-5-3-5 3 1.5-9"/>',
+  exam: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="m9 15 2 2 4-4"/>',
+  clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+  lock: '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  check: '<path d="M20 6 9 17l-5-5"/>',
+  x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  plus: '<path d="M12 5v14"/><path d="M5 12h14"/>',
 };
 const icon = (k) => `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor"
   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[k] || ''}</svg>`;
@@ -910,6 +1062,13 @@ async function vStudent(id) {
     ${p.flags.map(f => `<tr><td>${subjHtml(f.subject, f.subject_hy)}</td>
       <td>${fmt(f.predicted, 1)}</td><td>${riskChip(f.risk)}</td>
       <td class="flag-reason">${esc(reasonText(f.reason))}</td></tr>`).join('')}</table></div>` : ''}
+  ${p.quiz_history && p.quiz_history.length ? `<h2>${t('examHistory')}</h2>
+  <div class="card"><table><tr><th>${t('colExam')}</th><th>${t('thSubject')}</th>
+    <th>${t('colResult')}</th><th>${t('colScore')}</th></tr>
+    ${p.quiz_history.map(q => `<tr class="click" data-go="#exam/${q.id}">
+      <td>${esc(q.title)}</td><td>${subjHtml(q.subject, q.subject_hy)}</td>
+      <td>${t('examCorrect', q.n_correct, q.n_total)}</td>
+      <td><b>${fmt(q.score, 1)}</b></td></tr>`).join('')}</table></div>` : ''}
   ${p.tracks ? `<h2>${t('uniTracks')} <span class="muted" style="font-size:12px;font-weight:400">${t('uniTracksSub')}</span></h2>
   <div class="card">${p.tracks.map(tr => `
     <div class="bar-row wide"><div class="lbl">${esc((T[lang].track || T.en.track)[tr.track] || tr.track)}</div>
@@ -950,6 +1109,261 @@ async function vTeachers() {
       <td>${x.n_student_years}</td></tr>`;
   }).join('')}</table>
   <div class="note">${t('teacherNote')}</div></div>`;
+}
+
+/* ---------------- exams ---------------- */
+const ST_ICON = { pending: 'clock', approved: 'calendar', open: 'check',
+                  closed: 'lock', rejected: 'x', draft: 'exam' };
+function statusPill(status) {
+  const label = (T[lang].examStatus || T.en.examStatus)[status] || status;
+  return `<span class="status-pill st-${status}">${icon(ST_ICON[status] || 'exam')}${esc(label)}</span>`;
+}
+function examRow(q) {
+  const sub = q.my_submission;
+  let side;
+  if (sub) side = `<span class="score-badge">${fmt(sub.score, 1)}</span>
+    <span class="muted" style="font-size:11px">${t('examCorrect', sub.n_correct, sub.n_total)}</span>`;
+  else side = statusPill(q.status);
+  const meta = [subjText(q.subject, q.subject_hy), t('classWord') + ' ' + clsName(q.class),
+    q.scheduled_for ? '📅 ' + q.scheduled_for : null,
+    q.n_questions ? t('colQuestions') + ': ' + q.n_questions : null].filter(Boolean).join(' · ');
+  return `<div class="exam-row" data-go="#exam/${q.id}">
+    <div class="e-ic">${icon('exam')}</div>
+    <div class="e-main"><div class="e-title">${esc(q.title)}</div>
+      <div class="e-sub">${esc(meta)}</div></div>
+    <div class="e-side">${side}</div></div>`;
+}
+function examSection(title, list) {
+  if (!list.length) return '';
+  return `<h2>${esc(title)} <span class="muted" style="font-weight:400">· ${list.length}</span></h2>
+    <div class="exam-list">${list.map(examRow).join('')}</div>`;
+}
+
+async function vExams() {
+  const d = await api('/quizzes');
+  const qs = d.quizzes;
+  const isStudent = ME && !ME.open && (ME.role === 'student' || ME.role === 'parent');
+  let html = `<div class="page-head"><div><h2>${t('examsTitle')}</h2></div>`;
+  if (d.can_create)
+    html += `<button class="btn primary" id="newExam" style="margin-left:auto">
+      ${icon('plus')} ${t('examNew')}</button>`;
+  html += `</div>`;
+
+  if (isStudent) {
+    const open = qs.filter(q => q.status === 'open' && !q.my_submission);
+    const upcoming = qs.filter(q => q.status === 'approved' && !q.my_submission);
+    const past = qs.filter(q => q.my_submission || q.status === 'closed');
+    html += examSection(t('examOpenNow'), open)
+          + examSection(t('examUpcoming'), upcoming)
+          + examSection(t('examPast'), past);
+    if (!qs.length) html += `<div class="loading">${t('examNone')}</div>`;
+  } else {
+    const pending = qs.filter(q => q.status === 'pending');
+    const isDirector = ME && !ME.open && ME.role === 'director';
+    if (isDirector || (ME && ME.open)) html += examSection(t('examApprovalQueue'), pending);
+    const rest = (isDirector || (ME && ME.open)) ? qs.filter(q => q.status !== 'pending') : qs;
+    html += examSection(ME && !ME.open && ME.role === 'teacher' ? t('examMine') : t('examAll'), rest);
+    if (!qs.length) html += `<div class="loading">${t('examNone')}</div>`;
+  }
+  view.innerHTML = html;
+  const nb = document.getElementById('newExam');
+  if (nb) nb.onclick = () => location.hash = '#exam-new';
+}
+
+async function vExam(id) {
+  const q = await api('/quizzes/' + id);
+  const canManage = q.is_manager;
+  let html = `<a class="plain back" href="#exams">${t('back')}</a>
+    <div class="page-head"><div class="e-ic" style="width:44px;height:44px;border-radius:13px">${icon('exam')}</div>
+    <div><h2>${esc(q.title)}</h2>
+    <div class="ph-sub">${subjText(q.subject, q.subject_hy)} · ${t('classWord')} ${esc(clsName(q.class))}
+    ${q.scheduled_for ? '· 📅 ' + esc(q.scheduled_for) : ''}</div></div>
+    <div style="margin-left:auto">${statusPill(q.status)}</div></div>`;
+
+  if (q.status === 'rejected' && q.review_note)
+    html += `<div class="card" style="border-color:var(--status-crit);margin-bottom:14px">
+      ${esc(t('examRejectedNote', q.review_note))}</div>`;
+
+  // manager lifecycle actions
+  if (canManage) {
+    const acts = [];
+    if (q.status === 'draft') acts.push(['submit', t('examSubmitForApproval'), 'primary']);
+    if (q.status === 'pending') { acts.push(['approve', t('examApprove'), 'primary']);
+                                  acts.push(['reject', t('examReject'), '']); }
+    if (q.status === 'approved') acts.push(['open', t('examOpen'), 'primary']);
+    if (q.status === 'open') acts.push(['close', t('examClose'), '']);
+    if (acts.length) html += `<div class="actions">` + acts.map(([a, label, cls]) =>
+      `<button class="btn ${cls}" data-act="${a}">${esc(label)}</button>`).join('') + `</div>`;
+  }
+
+  // student taking / result
+  const sub = q.my_submission;
+  if (!canManage && q.questions === null) {
+    html += `<div class="card"><div class="person">${icon('lock')}
+      <span>${t('examQuestionsHidden')}</span></div>
+      <div class="note">${q.n_questions} ${t('colQuestions').toLowerCase()}</div></div>`;
+  } else if (!canManage && q.can_take && !sub) {
+    html += `<form id="takeForm">` + q.questions.map(qq => `
+      <div class="take-q" data-qid="${qq.id}">
+        <div class="tq-prompt"><span class="num">${qq.position + 1}.</span>${esc(qq.prompt)}</div>
+        ${qq.options.map((o, i) => `
+          <label class="opt" data-oi="${i}">
+            <span class="dot"></span><span>${esc(o)}</span>
+            <input type="radio" name="q${qq.id}" value="${i}" style="display:none"></label>`).join('')}
+      </div>`).join('') +
+      `<div class="actions"><button type="button" class="btn primary" id="submitExam">${t('examSubmit')}</button></div></form>`;
+  }
+
+  // result review (student who submitted, or closed)
+  if (sub) {
+    html += `<div class="card" style="margin-bottom:14px"><div style="display:flex;align-items:center;gap:16px">
+      <div><div class="l muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.5px">${t('examYourScore')}</div>
+      <div class="score-badge" style="font-size:30px">${fmt(sub.score, 1)}</div></div>
+      <div class="muted">${t('examCorrect', sub.n_correct, sub.n_total)}</div></div></div>`;
+  }
+  if (!canManage && sub && q.questions) {
+    html += `<h2>${t('examReview')}</h2>` + q.questions.map(qq => `
+      <div class="take-q">
+        <div class="tq-prompt"><span class="num">${qq.position + 1}.</span>${esc(qq.prompt)}</div>
+        ${qq.options.map((o, i) => {
+          const isCorrect = i === qq.correct, isChosen = i === qq.chosen;
+          let cls = '', mark = '';
+          if (isCorrect) { cls = 'correct'; mark = `<span class="mark ok">✓ ${t('examCorrectAnswer')}</span>`; }
+          else if (isChosen) { cls = 'wrong'; mark = `<span class="mark no">✗ ${t('examYourAnswer')}</span>`; }
+          return `<div class="opt ${cls}"><span>${esc(o)}</span>${mark}</div>`;
+        }).join('')}
+      </div>`).join('');
+  }
+
+  // manager: author preview + item analysis
+  if (canManage && q.questions) {
+    if (q.analysis) html += renderAnalysis(q.analysis);
+    html += `<h2>${t('colQuestions')}</h2>` + q.questions.map(qq => `
+      <div class="take-q"><div class="tq-prompt"><span class="num">${qq.position + 1}.</span>${esc(qq.prompt)}</div>
+      ${qq.options.map((o, i) => `<div class="opt ${i === qq.correct ? 'correct' : ''}">
+        <span>${esc(o)}</span>${i === qq.correct ? `<span class="mark ok">✓</span>` : ''}</div>`).join('')}
+      </div>`).join('');
+  }
+
+  view.innerHTML = html;
+
+  view.querySelectorAll('[data-act]').forEach(b => b.onclick = async () => {
+    let note = null;
+    if (b.dataset.act === 'reject') { note = prompt(t('examRejectPrompt')) ?? ''; }
+    await fetch(`/api/quizzes/${id}/transition`, { method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: b.dataset.act, note }) });
+    route();
+  });
+  view.querySelectorAll('.take-q .opt').forEach(opt => opt.onclick = () => {
+    const box = opt.closest('.take-q');
+    box.querySelectorAll('.opt').forEach(o => o.classList.remove('sel'));
+    opt.classList.add('sel');
+    const radio = opt.querySelector('input'); if (radio) radio.checked = true;
+  });
+  const sb = document.getElementById('submitExam');
+  if (sb) sb.onclick = async () => {
+    if (!confirm(t('examSubmitConfirm'))) return;
+    const answers = {};
+    view.querySelectorAll('.take-q').forEach(box => {
+      const checked = box.querySelector('input:checked');
+      if (checked) answers[box.dataset.qid] = +checked.value;
+    });
+    const r = await fetch(`/api/quizzes/${id}/submit`, { method: 'POST',
+      headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ answers }) });
+    if (r.ok) route(); else alert((await r.json()).detail || 'error');
+  };
+}
+
+function renderAnalysis(a) {
+  const diff = (pct) => {
+    if (pct == null) return '<span class="muted">–</span>';
+    const c = pct >= 70 ? 'var(--status-good)' : pct >= 40 ? 'var(--status-warn)' : 'var(--status-crit)';
+    return `<span class="diff-cell"><span class="diff-track"><span class="diff-fill"
+      style="width:${pct}%;background:${c}"></span></span>${pct}%</span>`;
+  };
+  return `<div class="tiles" style="margin-bottom:16px">
+    ${tile('student', t('colSubmitted'), `${a.n_submitted}/${a.n_students}`, '')}
+    ${tile('trend', t('colScore'), a.avg_score != null ? fmt(a.avg_score, 1) : '–', t('examClassResults'))}
+  </div>
+  <h2>${t('examItemAnalysis')}</h2>
+  <div class="card"><table><tr><th>#</th><th>${t('examBuilderPrompt')}</th><th>${t('colDifficulty')}</th></tr>
+    ${a.questions.map(q => `<tr><td>${q.position}</td><td>${esc(q.prompt)}</td>
+      <td>${diff(q.pct_correct)}</td></tr>`).join('')}</table></div>
+  <h2>${t('examClassResults')}</h2>
+  <div class="card"><table><tr><th>${t('thStudent')}</th><th>${t('colScore')}</th><th>${t('colWrong')}</th></tr>
+    ${a.students.map(s => `<tr class="click" data-go="#student/${s.student_id}">
+      <td>${person(s.name)}</td>
+      <td>${s.submitted ? `<b>${fmt(s.score, 1)}</b>` : `<span class="muted">${t('examNotSubmitted')}</span>`}</td>
+      <td>${s.wrong_questions.map(n => `<span class="wrong-chip">${n}</span>`).join('') ||
+        (s.submitted ? '<span class="up">✓</span>' : '')}</td></tr>`).join('')}</table></div>`;
+}
+
+async function vExamNew() {
+  const opts = await api('/exam-options');
+  let qCount = 0;
+  const qBlock = (n) => `<div class="qbuilder" data-q>
+    <div class="qb-head"><span class="qb-num">${t('examBuilderQuestion', n)}</span>
+      <button type="button" class="btn small" data-remove>${t('examBuilderRemoveQ')}</button></div>
+    <input class="qb-prompt" data-prompt placeholder="${esc(t('examBuilderPrompt'))}">
+    ${[0,1,2,3].map(i => `<div class="qb-opt">
+      <input type="text" data-opt placeholder="${esc(t('examBuilderOption', i + 1))}">
+      <label><input type="radio" name="c${n}" data-correct value="${i}">${t('examBuilderCorrect')}</label>
+    </div>`).join('')}</div>`;
+  view.innerHTML = `<a class="plain back" href="#exams">${t('back')}</a>
+    <div class="page-head"><div><h2>${t('examCreate')}</h2></div></div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="field"><label>${t('examBuilderTitle')}</label>
+        <input id="exTitle" placeholder="${esc(t('examTitleHint'))}"></div>
+      <div class="field row">
+        <div><label>${t('examBuilderSubject')}</label><select id="exSubject">
+          ${opts.subjects.map(s => `<option value="${s.id}">${esc(subjText(s.name_en, s.name_hy))}</option>`).join('')}
+        </select></div>
+        <div><label>${t('examBuilderClass')}</label><select id="exClass">
+          ${opts.classes.map(c => `<option value="${c.id}">${esc(clsName(c.label))}</option>`).join('')}
+        </select></div>
+        <div><label>${t('examBuilderDate')}</label><input type="date" id="exDate"></div>
+      </div>
+    </div>
+    <div id="qList"></div>
+    <div class="actions">
+      <button class="btn" id="addQ">${icon('plus')} ${t('examBuilderAddQ')}</button>
+      <button class="btn primary" id="saveExam">${t('examSaveDraft')}</button></div>
+    <div class="err" id="exErr" style="color:var(--status-crit);font-size:12.5px"></div>`;
+
+  const qList = document.getElementById('qList');
+  const addQ = () => { qCount++; qList.insertAdjacentHTML('beforeend', qBlock(qCount));
+    qList.lastElementChild.querySelector('[data-remove]').onclick = (e) => e.target.closest('[data-q]').remove(); };
+  for (let i = 0; i < 5; i++) addQ();
+  document.getElementById('addQ').onclick = (e) => { e.preventDefault(); addQ(); };
+
+  document.getElementById('saveExam').onclick = async () => {
+    const questions = [];
+    qList.querySelectorAll('[data-q]').forEach(block => {
+      const prompt = block.querySelector('[data-prompt]').value.trim();
+      const opts2 = [...block.querySelectorAll('[data-opt]')].map(i => i.value.trim());
+      const checked = block.querySelector('[data-correct]:checked');
+      if (!prompt) return;
+      const kept = []; let correct = -1;
+      opts2.forEach((o, i) => { if (o) { if (checked && +checked.value === i) correct = kept.length; kept.push(o); } });
+      if (kept.length >= 2 && correct >= 0) questions.push({ prompt, options: kept, correct });
+    });
+    const title = document.getElementById('exTitle').value.trim();
+    const class_id = +document.getElementById('exClass').value;
+    if (!title || !class_id || !questions.length) {
+      document.getElementById('exErr').textContent = t('examBuilderNeed'); return;
+    }
+    const r = await fetch('/api/quizzes', { method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, subject_id: +document.getElementById('exSubject').value,
+        class_id, scheduled_for: document.getElementById('exDate').value || null, questions }) });
+    if (r.ok) { const { id } = await r.json();
+      // auto-send for approval so the workflow is visible end to end
+      await fetch(`/api/quizzes/${id}/transition`, { method: 'POST',
+        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'submit' }) });
+      location.hash = '#exam/' + id;
+    } else { document.getElementById('exErr').textContent = (await r.json()).detail || 'error'; }
+  };
 }
 
 function vAbout() {
@@ -1030,12 +1444,14 @@ function navHtml() {
         navItem(`#student/${k.id}`, 'student', k.name) +
         navItem(`#class/${k.class_id}`, 'home', clsName(k.class))).join('');
     }
-    return items + navItem('#about', 'about', t('navAbout'));
+    return items + navItem('#exams', 'exam', t('navExams'))
+                 + navItem('#about', 'about', t('navAbout'));
   }
   return navItem('#overview', 'overview', t('navOverview'))
        + navItem('#classes', 'classes', t('navClasses'))
        + navItem('#students', 'student', t('navStudents'))
        + navItem('#teachers', 'teachers', t('navTeachers'))
+       + navItem('#exams', 'exam', t('navExams'))
        + navItem('#about', 'about', t('navAbout'));
 }
 
@@ -1150,11 +1566,15 @@ async function route() {
   if (restrictedRole() && (h === '#overview' || h === '#students' || h === '#teachers')) {
     defaultRoute(); return;
   }
+  if (h === '#exam-new' && !(ME.open || ME.role === 'director' || ME.role === 'teacher')) {
+    location.hash = '#exams'; return;
+  }
   document.querySelectorAll('#nav a').forEach(a =>
     a.classList.toggle('on',
       a.getAttribute('href') === h ||
       (a.getAttribute('href') === '#classes' && h.startsWith('#class/')) ||
       (a.getAttribute('href') === '#students' && h.startsWith('#student/')) ||
+      (a.getAttribute('href') === '#exams' && (h.startsWith('#exam/') || h === '#exam-new')) ||
       (a.getAttribute('href') === '#overview' && (h === '' || h === '#overview'))));
   const drop = document.getElementById('ts-drop');
   if (drop) drop.style.display = 'none';
@@ -1162,6 +1582,9 @@ async function route() {
   try {
     if (h.startsWith('#class/')) await vClass(h.split('/')[1]);
     else if (h.startsWith('#student/')) await vStudent(h.split('/')[1]);
+    else if (h.startsWith('#exam/')) await vExam(h.split('/')[1]);
+    else if (h === '#exam-new') await vExamNew();
+    else if (h === '#exams') await vExams();
     else if (h === '#classes') await vClasses();
     else if (h === '#students') await vStudents();
     else if (h === '#teachers') await vTeachers();

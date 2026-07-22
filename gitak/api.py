@@ -17,11 +17,11 @@ reasons and pairings; other children's difficulties are not their business
 import time
 from pathlib import Path
 
-from fastapi import Cookie, Depends, FastAPI, HTTPException, Response
+from fastapi import Body, Cookie, Depends, FastAPI, HTTPException, Response
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 
-from . import auth, db, ml, pairing, reports
+from . import auth, db, ml, pairing, quizzes, reports
 
 app = FastAPI(title="Gitak", version="0.3.0")
 DASHBOARD = Path(__file__).resolve().parent.parent / "dashboard" / "index.html"
@@ -143,6 +143,7 @@ def student(student_id: int, con=Depends(get_con), user=Depends(get_user)):
     data = reports.student_profile(con, student_id)
     if data is None:
         raise HTTPException(404, "student not found")
+    data["quiz_history"] = quizzes.student_quiz_history(con, student_id)
     return data
 
 
@@ -198,3 +199,79 @@ def run_predict(con=Depends(get_con), user=Depends(get_user)):
     pairs = pairing.suggest(con, summary["target_year"], summary["target_quarter"])
     summary["n_pairings"] = len(pairs)
     return summary
+
+
+# --------------------------------------------------------------- exams ----
+# Weekly interactive exams: teacher authors, director approves, students take.
+
+def _quiz_guard(fn):
+    """Translate quiz-layer errors into HTTP status codes."""
+    try:
+        return fn()
+    except quizzes.QuizForbidden as e:
+        raise HTTPException(403, str(e))
+    except quizzes.QuizError as e:
+        raise HTTPException(400, str(e))
+
+
+@app.get("/api/quizzes")
+def quiz_list(con=Depends(get_con), user=Depends(get_user)):
+    _require(user, "director", "teacher", "student", "parent")
+    return quizzes.list_quizzes(con, None if user.get("open") else user)
+
+
+@app.post("/api/quizzes")
+def quiz_create(body: dict = Body(...), con=Depends(get_con), user=Depends(get_user)):
+    _require(user, "director", "teacher")
+    viewer = None if user.get("open") else user
+    quiz_id = _quiz_guard(lambda: quizzes.create_quiz(con, viewer, body))
+    return {"id": quiz_id}
+
+
+@app.get("/api/quizzes/{quiz_id}")
+def quiz_get(quiz_id: int, con=Depends(get_con), user=Depends(get_user)):
+    _require(user, "director", "teacher", "student", "parent")
+    viewer = None if user.get("open") else user
+    return _quiz_guard(lambda: quizzes.quiz_detail(con, viewer, quiz_id))
+
+
+@app.post("/api/quizzes/{quiz_id}")
+def quiz_update(quiz_id: int, body: dict = Body(...),
+                con=Depends(get_con), user=Depends(get_user)):
+    _require(user, "director", "teacher")
+    viewer = None if user.get("open") else user
+    _quiz_guard(lambda: quizzes.update_quiz(con, viewer, quiz_id, body))
+    return {"ok": True}
+
+
+@app.post("/api/quizzes/{quiz_id}/transition")
+def quiz_transition(quiz_id: int, body: dict = Body(...),
+                    con=Depends(get_con), user=Depends(get_user)):
+    _require(user, "director", "teacher")
+    viewer = None if user.get("open") else user
+    status = _quiz_guard(lambda: quizzes.transition(
+        con, viewer, quiz_id, body.get("action"), body.get("note")))
+    return {"status": status}
+
+
+@app.post("/api/quizzes/{quiz_id}/submit")
+def quiz_submit(quiz_id: int, body: dict = Body(...),
+                con=Depends(get_con), user=Depends(get_user)):
+    _require(user, "director", "teacher", "student", "parent")
+    viewer = None if user.get("open") else user
+    return _quiz_guard(lambda: quizzes.submit(con, viewer, quiz_id, body.get("answers")))
+
+
+@app.get("/api/exam-options")
+def exam_options(con=Depends(get_con), user=Depends(get_user)):
+    """Subjects and classes the viewer may author an exam for (exam builder)."""
+    _require(user, "director", "teacher")
+    subjects = [dict(r) for r in con.execute(
+        "SELECT id, name_en, name_hy FROM subjects ORDER BY name_en").fetchall()]
+    if user is not None and not user.get("open") and user["role"] == "teacher":
+        srow = con.execute("SELECT subject_id FROM teachers WHERE id = ?",
+                           (user["teacher_id"],)).fetchone()
+        if srow:
+            subjects = [s for s in subjects if s["id"] == srow["subject_id"]]
+    classes = reports.classes_list(con)["classes"]
+    return {"subjects": subjects, "classes": classes}
